@@ -40,11 +40,26 @@ class UserController extends Controller
             return response(['error' => 1, 'message' => 'user already exists'], 409);
         }
 
-        $user = User::create([
-            'name'  => $creds['name'],
-            'email'     => $creds['email'],
-            'password'  => Hash::make($creds['password'])
-        ]);
+
+        if($request->hasFile('avatar')){
+
+            $path = $request->file('avatar')->store('public/avatars');
+            $storage_path = str_replace('public', 'storage', $path);
+            $user = User::create([
+                'name'      => $creds['name'],
+                'avatar'    => $storage_path,
+                'email'     => $creds['email'],
+                'password'  => Hash::make($creds['password']),
+            ]);
+        }else{
+            $user = User::create([
+                'name'      => $creds['name'],
+                'email'     => $creds['email'],
+                'password'  => Hash::make($creds['password'])
+            ]);
+        }
+
+        
 
         $user->roles()->attach(Role::where('slug', $creds['role'])->first());
 
@@ -76,12 +91,17 @@ class UserController extends Controller
         $user->email        = $request->email       ?? $user->email;
         $user->password     = $request->password    ? Hash::make($request->password) : $user->password;
         
+        if($request->hasFile('avatar')){
+            $path           = $request->file('avatar')->store('public/avatars');
+            $storage_path   = str_replace('public', 'storage', $path);
+            $user->avatar   = $storage_path ?? $user->avatar;
+        }
+        
         if($request->role){
             $user->roles()->sync([Role::where('slug',$request->role)->first()->id]);
         }    
         
         //check if the logged in user is updating it's own record
-
         $loggedInUser = $request->user();
         if ($loggedInUser->id == $user->id) {
             $user->update();
