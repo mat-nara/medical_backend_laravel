@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Antibiogramme;
+use LogActivity;
+use Auth;
 
 class AntibiogrammeController extends Controller
 {
@@ -38,6 +40,8 @@ class AntibiogrammeController extends Controller
         $antibiogramme->value = $request->value;
         $patient->biochimies()->save($antibiogramme);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new Antibiogram data '.' with date: '. $request->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Antibiogramme stored']);
     }
 
@@ -67,6 +71,10 @@ class AntibiogrammeController extends Controller
         $antibiogramme->value = $request->value   ?? $antibiogramme->value;
 
         $antibiogramme->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the Antibiogram data '.' with date: '. $antibiogramme->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Antibiogramme updated']);
     }
 
@@ -80,6 +88,10 @@ class AntibiogrammeController extends Controller
     {
         $antibiogramme = Antibiogramme::find($antibiogramme);
         $antibiogramme->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the Antibiogram data '.' with date: '. $antibiogramme->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Antibiogramme deleted']);
     }
 }

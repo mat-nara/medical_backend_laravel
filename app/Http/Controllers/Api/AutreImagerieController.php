@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\AutreImagerie;
+use LogActivity;
+use Auth;
 
 class AutreImagerieController extends Controller
 {
@@ -38,6 +40,8 @@ class AutreImagerieController extends Controller
 
         $patient->autres_imageries()->save($autre_imagerie);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new AutreImagerie data '.' with date: '. $autre_imagerie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'AutreImagerie stored']);
     }
 
@@ -67,6 +71,10 @@ class AutreImagerieController extends Controller
         $autre_imagerie->value = $request->value   ?? $autre_imagerie->value;
 
         $autre_imagerie->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the AutreImagerie data '.' with date: '. $autre_imagerie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'AutreImagerie updated']);
     }
 
@@ -80,6 +88,10 @@ class AutreImagerieController extends Controller
     {
         $autre_imagerie = AutreImagerie::find($autre_imagerie);
         $autre_imagerie->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the AutreImagerie data '.' with date: '. $autre_imagerie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'AutreImagerie deleted']);
     }
 }

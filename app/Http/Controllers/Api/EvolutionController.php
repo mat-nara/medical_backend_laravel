@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Evolution;
+use LogActivity;
+use Auth;
 
 class EvolutionController extends Controller
 {
@@ -44,6 +46,8 @@ class EvolutionController extends Controller
 
         $patient->evolutions()->save($evolution);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new Evolution data '.' with date: '. $evolution->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Evolution stored']);
     }
 
@@ -93,6 +97,10 @@ class EvolutionController extends Controller
         $evolution->conclusion      = $request->conclusion      ?? $evolution->conclusion;
      
         $evolution->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the Evolution data '.' with date: '. $evolution->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Evolution updated']);
     }
 
@@ -106,6 +114,10 @@ class EvolutionController extends Controller
     {
         $evolution = Evolution::find($evolution);
         $evolution->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the Evolution data '.' with date: '. $evolution->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Evolution deleted']);
     }
 }

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Biochimie;
+use LogActivity;
+use Auth;
 
 class BiochimieController extends Controller
 {
@@ -38,6 +40,8 @@ class BiochimieController extends Controller
         $biochimie->value = $request->value;
         $patient->biochimies()->save($biochimie);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new Biochimie data '.' with date: '. $biochimie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Biochimie stored']);
     }
 
@@ -67,6 +71,10 @@ class BiochimieController extends Controller
         $biochimie->value = $request->value   ?? $biochimie->value;
 
         $biochimie->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the Biochimie data '.' with date: '. $biochimie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Biochimie updated']);
     }
 
@@ -80,6 +88,10 @@ class BiochimieController extends Controller
     {
         $biochimie = Biochimie::find($biochimie);
         $biochimie->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the Biochimie data '.' with date: '. $biochimie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Biochimie deleted']);
     }
 }

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Hematologie;
+use LogActivity;
+use Auth;
 
 class HematologieController extends Controller
 {
@@ -38,6 +40,8 @@ class HematologieController extends Controller
         $hematologie->value = $request->value;
         $patient->hematologies()->save($hematologie);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new Hematologie data '.' with date: '. $hematologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Hematologie stored']);
     }
 
@@ -67,6 +71,10 @@ class HematologieController extends Controller
         $hematologie->value = $request->value   ?? $hematologie->value;
 
         $hematologie->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the Hematologie data '.' with date: '. $hematologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Hematologie updated']);
     }
 
@@ -80,6 +88,10 @@ class HematologieController extends Controller
     {
         $hematologie = Hematologie::find($hematologie);
         $hematologie->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the Hematologie data '.' with date: '. $hematologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Hematologie deleted']);
     }
 }

@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Traitement;
+use LogActivity;
+use Auth;
 
 class TraitementController extends Controller
 {
@@ -42,6 +44,8 @@ class TraitementController extends Controller
 
         $patient->traitements()->save($traitement);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new Traitement data for the patient: '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Traitement stored']);
     }
 
@@ -69,6 +73,10 @@ class TraitementController extends Controller
         $traitement->value  = $request->value ?? $traitement->value;
      
         $traitement->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the Traitement data for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Traitement updated']);
     }
 
@@ -82,6 +90,10 @@ class TraitementController extends Controller
     {
         $traitement = Traitement::find($traitement);
         $traitement->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the Traitement data for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Traitement deleted']);
     }
 }

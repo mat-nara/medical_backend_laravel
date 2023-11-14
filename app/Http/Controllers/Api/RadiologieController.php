@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Radiologie;
+use LogActivity;
+use Auth;
 
 class RadiologieController extends Controller
 {
@@ -38,6 +40,8 @@ class RadiologieController extends Controller
 
         $patient->radiologies()->save($radiologie);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new Radiologie data '.' with date: '. $radiologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Radiologie stored']);
     }
 
@@ -67,6 +71,10 @@ class RadiologieController extends Controller
         $radiologie->value = $request->value   ?? $radiologie->value;
 
         $radiologie->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the Radiologie data '.' with date: '. $radiologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Radiologie updated']);
     }
 
@@ -80,6 +88,10 @@ class RadiologieController extends Controller
     {
         $radiologie = Radiologie::find($radiologie);
         $radiologie->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the Radiologie data '.' with date: '. $radiologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Radiologie deleted']);
     }
 }

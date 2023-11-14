@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Echographie;
+use LogActivity;
+use Auth;
 
 class EchographieController extends Controller
 {
@@ -38,6 +40,8 @@ class EchographieController extends Controller
 
         $patient->echographies()->save($echographie);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new Echographie data '.' with date: '. $echographie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Echographie stored']);
     }
 
@@ -67,6 +71,10 @@ class EchographieController extends Controller
         $echographie->value = $request->value   ?? $echographie->value;
 
         $echographie->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the Echographie data '.' with date: '. $echographie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Echographie updated']);
     }
 
@@ -80,6 +88,10 @@ class EchographieController extends Controller
     {
         $echographie = Echographie::find($echographie);
         $echographie->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the Echographie data '.' with date: '. $echographie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Echographie deleted']);
     }
 }

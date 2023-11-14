@@ -29,6 +29,8 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'service_id',
+        'parent_id',
         'name',
         'avatar',
         'email',
@@ -54,8 +56,49 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+
+    /**
+     * Get the roles of the user.
+     * 
+     */
     public function roles() {
         return $this->belongsToMany(Role::class, 'user_roles');
+    }
+
+
+    /**
+     * Get all childs of the user.
+     * 
+     */
+    public function childs(){
+        return $this->hasMany(User::class,'parent_id','id') ;
+    }
+
+
+    /**
+     * Get parent of the user.
+     * 
+     */
+    public function parent(){
+        return $this->belongsTo(User::class,'parent_id','id');
+    }
+
+    
+    /**
+     * Get the service that owns the user.
+     * 
+     */
+    public function service()
+    {
+        return $this->belongsTo(Service::class, 'service_id', 'id' );
+    }
+
+    /**
+     * Get the patients of the user.
+     * 
+     */
+    public function patients() {
+        return $this->belongsToMany(Patient::class, 'accesses', 'user_id', 'patient_id')->withPivot(['id','permission']);
     }
 
 }

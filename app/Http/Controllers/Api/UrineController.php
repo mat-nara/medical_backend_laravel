@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Urine;
 use App\Models\Patient;
+use LogActivity;
+use Auth;
 
 class UrineController extends Controller
 {
@@ -38,6 +40,8 @@ class UrineController extends Controller
         $urine->value = $request->value;
         $patient->urines()->save($urine);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new Urine data '.' with date: '. $urine->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Urine stored']);
     }
 
@@ -67,6 +71,10 @@ class UrineController extends Controller
         $urine->value = $request->value   ?? $urine->value;
 
         $urine->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the Urine data '.' with date: '. $urine->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Urine updated']);
     }
 
@@ -80,6 +88,10 @@ class UrineController extends Controller
     {
         $urine = Urine::find($urine);
         $urine->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the Urine data '.' with date: '. $urine->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Urine deleted']);
     }
 }

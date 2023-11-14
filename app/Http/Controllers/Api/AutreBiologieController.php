@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\AutreBiologie;
+use LogActivity;
+use Auth;
 
 class AutreBiologieController extends Controller
 {
@@ -38,6 +40,8 @@ class AutreBiologieController extends Controller
         $autre_biologie->value = $request->value;
         $patient->biochimies()->save($autre_biologie);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new AutreBiologie data '.' with date: '. $autre_biologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'AutreBiologie stored']);
     }
 
@@ -67,6 +71,10 @@ class AutreBiologieController extends Controller
         $autre_biologie->value = $request->value   ?? $autre_biologie->value;
 
         $autre_biologie->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the AutreBiologie data '.' with date: '. $autre_biologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'AutreBiologie updated']);
     }
 
@@ -80,6 +88,10 @@ class AutreBiologieController extends Controller
     {
         $autre_biologie = AutreBiologie::find($autre_biologie);
         $autre_biologie->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the AutreBiologie data '.' with date: '. $autre_biologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'AutreBiologie deleted']);
     }
 }

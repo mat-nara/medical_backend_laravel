@@ -13,8 +13,51 @@ class RoleController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index() {
-        return Role::all();
+    public function index(Request $request) {
+
+        $loggedInUser   = $request->user();
+        $slug           = $loggedInUser->roles[0]->slug;
+        return $this->generate_lower_role($slug);
+        //return Role::all();
+    }
+
+    public function generate_lower_role($slug){
+        
+        $role           = Role::where('slug', $slug)->first();
+        $lower_roles    = [$role];
+        while( count($role->childs) > 0){
+            
+            $childs = $role->childs;
+            for ($i=0; $i < count($childs); $i++) { 
+                $lower_roles[] = $childs[$i];
+            }
+            $role = $childs[0];
+        }
+        return $lower_roles;
+    }
+
+    public function generate_strict_lower_role($slug, $attribut){
+        
+        $role           = Role::where('slug', $slug)->first();
+        $lower_roles    = [];
+        while( count($role->childs) > 0){
+            
+            $childs = $role->childs;
+            for ($i=0; $i < count($childs); $i++) { 
+                $lower_roles[] = $childs[$i];
+            }
+            $role = $childs[0];
+        }
+
+        if($attribut == 'slug'){
+            $array_slug = [];
+            for ($i=0; $i < count($lower_roles); $i++) { 
+                $array_slug[] = $lower_roles[$i]->slug;
+            }
+            return $array_slug;
+        }
+
+        return $lower_roles;
     }
 
     /**

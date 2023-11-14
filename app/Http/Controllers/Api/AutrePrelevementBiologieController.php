@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\AutrePrelevementBiologie;
 use App\Models\Patient;
+use LogActivity;
+use Auth;
 
 class AutrePrelevementBiologieController extends Controller
 {
@@ -38,6 +40,8 @@ class AutrePrelevementBiologieController extends Controller
         $autre_prelevement->value = $request->value;
         $patient->autres_prelevements_biologies()->save($autre_prelevement);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new AutrePrelevementBiologie data '.' with date: '. $autre_prelevement->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Autre prelevement biologie stored']);
     }
 
@@ -67,6 +71,10 @@ class AutrePrelevementBiologieController extends Controller
         $autre_prelevement->value = $request->value   ?? $autre_prelevement->value;
 
         $autre_prelevement->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the AutrePrelevementBiologie data '.' with date: '. $autre_prelevement->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'AutrePrelevementBiologie updated']);
     }
 
@@ -80,6 +88,10 @@ class AutrePrelevementBiologieController extends Controller
     {
         $autre_prelevement = AutrePrelevementBiologie::find($autre_prelevement);
         $autre_prelevement->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the AutrePrelevementBiologie data '.' with date: '. $autre_prelevement->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'AutrePrelevementBiologie deleted']);
     }
 }

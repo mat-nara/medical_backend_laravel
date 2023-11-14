@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateUrinesTable extends Migration
+class CreateAccessesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,11 @@ class CreateUrinesTable extends Migration
      */
     public function up()
     {
-        Schema::create('urines', function (Blueprint $table) {
+        Schema::create('accesses', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('patient_id')->constrained()->cascadeOnDelete();
-            $table->string('date');
-            $table->json('value');
+            $table->enum('permission', ['read', 'write'])->default('write');
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP'));
         });
@@ -30,6 +30,6 @@ class CreateUrinesTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('urines');
+        Schema::dropIfExists('accesses');
     }
 }

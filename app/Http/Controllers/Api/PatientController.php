@@ -6,7 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Observation;
-
+use LogActivity;
+use Auth;
 
 
 class PatientController extends Controller
@@ -31,9 +32,17 @@ class PatientController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Patient::all();
+        $loggedInUser = $request->user();
+
+        // SUPER ADMIN: can view all patient
+        if($loggedInUser->roles[0]->slug == 'super_admin'){
+            return Patient::all();
+        }
+
+        // OTHER USER: Only authorized patient
+        return $loggedInUser->patients()->get();
     }
 
     /**
@@ -62,7 +71,8 @@ class PatientController extends Controller
         $patient->telephone                 = $request->telephone;              
         $patient->personne_en_charge        = $request->personne_en_charge;     
         $patient->contact_pers_en_charge    = $request->contact_pers_en_charge; 
-        $patient->date_entree               = $request->date_entree;            
+        $patient->date_entree               = $request->date_entree;        
+        $patient->date_sortie               = $request->date_sortie;            
         $patient->motif_entree              = $request->motif_entree;   
         
         $patient->save();
@@ -91,6 +101,16 @@ class PatientController extends Controller
 
         $patient->observation()->save($observation);
 
+        //Grant access to all supervisor user
+        $user = Auth::user();
+        $user->patients()->attach($patient);
+        while($user->parent){
+            $user = $user->parent;
+            $user->patients()->attach($patient);
+        }
+
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new Patient '.' with name: '. $patient->nom);
         return response(['error' => 0, 'message' => 'Patient has been created successfully', 'data' => $patient], 201);
     }
 
@@ -100,8 +120,15 @@ class PatientController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show(Patient $patient)
+    public function show($patient)
     {
+        $user       = Auth::user();
+        $patient    = $user->patients()->where('patient_id', $patient)->first();
+
+        if(!$patient){
+            return response(['error' => 1, 'message' => 'Patient doesn\'t exist or you don\'t have access'], 404);
+        }
+
         return $patient;
     }
 
@@ -111,13 +138,18 @@ class PatientController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show_with_observation(Patient $patient)
+    public function show_with_observation($patient)
     {
-        if (! $patient) {
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist'], 404);
+        $user       = Auth::user();
+        $patient    = $user->patients()->with('observation')->where('patient_id', $patient)->first();
+
+        if(!$patient){
+            return response(['error' => 1, 'message' => 'Patient doesn\'t exist or you don\'t have access'], 404);
         }
 
-        $patient->observation = $patient->observation;
+
+        $loggedInUser = Auth::user();
+        LogActivity::addToLog($loggedInUser->name . ' viewed Patient '. $patient->nom.' '. $patient->prenoms. '\'s information');
         return $patient;
     }
 
@@ -135,6 +167,14 @@ class PatientController extends Controller
         if (! $patient) {
             return response(['error' => 1, 'message' => 'Patient doesn\'t exist'], 404);
         }
+
+        $user       = Auth::user();
+        $authorized = $user->patients()->where([['patient_id', $patient->id],['permission', 'write']])->first();
+
+        if(!$authorized){
+            return response(['error' => 1, 'message' => 'You don\'t have access to update this user'], 404);
+        }
+
         
         $patient->n_dossier                 = $request->n_dossier               ?? $patient->n_dossier;
         $patient->n_bulletin                = $request->n_bulletin              ?? $patient->n_bulletin;
@@ -152,7 +192,9 @@ class PatientController extends Controller
         $patient->personne_en_charge        = $request->personne_en_charge      ?? $patient->personne_en_charge;
         $patient->contact_pers_en_charge    = $request->contact_pers_en_charge  ?? $patient->contact_pers_en_charge;
         $patient->date_entree               = $request->date_entree             ?? $patient->date_entree;
+        $patient->date_sortie               = $request->date_sortie             ?? $patient->date_sortie;
         $patient->motif_entree              = $request->motif_entree            ?? $patient->motif_entree;
+        
 
         $patient->update();
 
@@ -180,6 +222,8 @@ class PatientController extends Controller
 
         $observation->update();
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update Patient '.' with name: '. $patient->nom);
         return response(['error' => 0, 'message' => 'Patient updated']);
     }
 
@@ -191,7 +235,18 @@ class PatientController extends Controller
      */
     public function destroy(Patient $patient)
     {
+
+        $user   = Auth::user();
+        if( ! ($user->roles[0]->slug == 'super_admin' || $user->roles[0]->slug == 'admin')){
+            $authorized = $user->patients()->where([['patient_id', $patient],['permission', 'write']])->first();
+            if(!$authorized){
+                return response(['error' => 1, 'message' => 'You don\'t have access to delete this user'], 404);
+            }
+        }
+
         $patient->delete();
+
+        LogActivity::addToLog($user->name . ' deleted Patient '.' with name: '. $patient->nom);
         return response(['error' => 0, 'message' => 'Patient deleted']);
     }
 }

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Exceptions\MissingAbilityException;
-
+use LogActivity;
 
 class AuthenticationController extends Controller
 {
@@ -41,6 +41,7 @@ class AuthenticationController extends Controller
 
         $plainTextToken = $user->createToken('personnal-api-token', $roles)->plainTextToken;
 
+        LogActivity::addToLog($user->name . ' logged in');
         return response(['error' => 0, 'id' => $user->id, 'token' => $plainTextToken, 'userInfo' => $user], 200);
     }
 
@@ -61,11 +62,13 @@ class AuthenticationController extends Controller
      * @return \Illuminate\Http\Response
      */
 	public function logout(Request $request) {
-
+        
 		// Revoke the token that was used to authenticate the current request
 		$request->user()->currentAccessToken()->delete();
 		//$request->user->tokens()->delete(); // use this to revoke all tokens (logout from all devices)
-		return response()->json(null, 200);
+
+        LogActivity::addToLog($request->user()->name . ' had been logged out');
+		return response(['message'=>'Successully disconnected'], 200);
 	}
 
     /**

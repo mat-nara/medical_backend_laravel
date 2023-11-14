@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\ExamenFonctionnel;
+use LogActivity;
+use Auth;
 
 class ExamenFonctionnelController extends Controller
 {
@@ -38,6 +40,8 @@ class ExamenFonctionnelController extends Controller
 
         $patient->examens_fonctionnels()->save($examen_fonctionnel);
 
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new ExamenFonctionnel data '.' with date: '. $examen_fonctionnel->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'ExamenFonctionnel stored']);
     }
 
@@ -67,6 +71,10 @@ class ExamenFonctionnelController extends Controller
         $examen_fonctionnel->value = $request->value   ?? $examen_fonctionnel->value;
 
         $examen_fonctionnel->update();
+
+        $patient        = Patient::find($patient);
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the ExamenFonctionnel data '.' with date: '. $examen_fonctionnel->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'ExamenFonctionnel updated']);
     }
 
@@ -80,6 +88,10 @@ class ExamenFonctionnelController extends Controller
     {
         $examen_fonctionnel = ExamenFonctionnel::find($examen_fonctionnel);
         $examen_fonctionnel->delete();
+
+        $patient    = Patient::find($patient);
+        $user       = Auth::user();
+        LogActivity::addToLog($user->name . ' deleted the ExamenFonctionnel data '.' with date: '. $examen_fonctionnel->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'ExamenFonctionnel deleted']);
     }
 }

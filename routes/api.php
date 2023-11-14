@@ -21,9 +21,14 @@ use App\Http\Controllers\Api\AutreImagerieController;
 use App\Http\Controllers\Api\ExamenFonctionnelController;
 use App\Http\Controllers\Api\EvolutionController;
 use App\Http\Controllers\Api\TraitementController;
+use App\Http\Controllers\Api\SurveillanceController;
+use App\Http\Controllers\Api\RecapitulationController;
+use App\Http\Controllers\Api\HopitalController;
+use App\Http\Controllers\Api\ServiceController;
+use App\Http\Controllers\Api\AccessController;
 
 
-
+use App\Http\Controllers\Api\LogActivityController;
 
 
 
@@ -46,18 +51,26 @@ Route::group(['middleware'=> ['cors']], function(){
     Route::post('send-password-reset-link-email',   [AuthenticationController::class, 'sendPasswordResetLinkEmail']);
     Route::post('reset-password',                   [AuthenticationController::class, 'resetPassword'])->name('password.reset');
 
-    Route::get('users',           [UserController::class, 'index'])     ->middleware(['auth:sanctum', 'ability:admin']);
-    Route::post('users',          [UserController::class, 'store'])     ->middleware(['auth:sanctum', 'ability:admin']);
-    Route::get('users/{user}',    [UserController::class, 'show'])      ->middleware(['auth:sanctum']);
-    Route::put('users/{user}',    [UserController::class, 'update'])    ->middleware(['auth:sanctum']);
-    Route::delete('users/{user}', [UserController::class, 'destroy'])   ->middleware(['auth:sanctum', 'ability:admin']);
+    Route::get('users',           [UserController::class, 'index'])     ->middleware(['auth:sanctum', 'ability:super_admin,admin,chef_service,medecin,intern']);
+    Route::post('users',          [UserController::class, 'store'])     ->middleware(['auth:sanctum', 'ability:super_admin,admin,chef_service,medecin,intern']);
+    Route::get('users/{user}',    [UserController::class, 'show'])      ->middleware(['auth:sanctum', 'ability:super_admin,admin,chef_service,medecin,intern'])->where(['user' => '[0-9]+']);
+    Route::put('users/{user}',    [UserController::class, 'update'])    ->middleware(['auth:sanctum', 'ability:super_admin,admin,chef_service,medecin,intern']);
+    Route::delete('users/{user}', [UserController::class, 'destroy'])   ->middleware(['auth:sanctum', 'ability:super_admin,admin,chef_service,medecin,intern']);
+    Route::get('users/hierarchie',[UserController::class, 'hierarchie'])->middleware(['auth:sanctum', 'ability:super_admin,admin,chef_service,medecin,intern']);
 
-    Route::get('patients',              [PatientController::class, 'index'])     ->middleware(['auth:sanctum', 'ability:admin']);
-    Route::post('patients',             [PatientController::class, 'store'])     ->middleware(['auth:sanctum', 'ability:admin']);
+    
+    Route::get('roles',             [RoleController::class, 'index'])   ->middleware(['auth:sanctum']);
+    Route::post('roles',            [RoleController::class, 'store'])   ->middleware(['auth:sanctum']);
+    Route::get('roles/{role}',      [RoleController::class, 'show'])    ->middleware(['auth:sanctum']);
+    Route::put('roles/{role}',      [RoleController::class, 'update'])  ->middleware(['auth:sanctum']);
+    Route::delete('roles/{role}',   [RoleController::class, 'destroy']) ->middleware(['auth:sanctum']);
+
+    Route::get('patients',              [PatientController::class, 'index'])     ->middleware(['auth:sanctum']);
+    Route::post('patients',             [PatientController::class, 'store'])     ->middleware(['auth:sanctum']);
     Route::get('patients/{patient}',    [PatientController::class, 'show'])      ->middleware(['auth:sanctum']);
     Route::get('patients/{patient}/observation', [PatientController::class, 'show_with_observation'])->middleware(['auth:sanctum']);
-    Route::put('patients/{patient}',    [PatientController::class, 'update'])    ->middleware(['auth:sanctum', 'ability:admin']);
-    Route::delete('patients/{patient}', [PatientController::class, 'destroy'])   ->middleware(['auth:sanctum', 'ability:admin']);
+    Route::put('patients/{patient}',    [PatientController::class, 'update'])    ->middleware(['auth:sanctum']);
+    Route::delete('patients/{patient}', [PatientController::class, 'destroy'])   ->middleware(['auth:sanctum']);
 
     Route::get('patients/{patient}/hematologies',                   [HematologieController::class, 'index']) ->middleware(['auth:sanctum']);
     Route::post('patients/{patient}/hematologies',                  [HematologieController::class, 'store']) ->middleware(['auth:sanctum']);
@@ -134,12 +147,42 @@ Route::group(['middleware'=> ['cors']], function(){
     Route::get('patients/{patient}/traitements/{traitement}',       [TraitementController::class, 'show'])  ->middleware(['auth:sanctum']);
     Route::put('patients/{patient}/traitements/{traitement}',       [TraitementController::class, 'update'])->middleware(['auth:sanctum']);
     Route::delete('patients/{patient}/traitements/{traitement}',    [TraitementController::class, 'destroy'])->middleware(['auth:sanctum']);
+
+    Route::get('patients/{patient}/surveillances',                      [SurveillanceController::class, 'index']) ->middleware(['auth:sanctum']);
+    Route::post('patients/{patient}/surveillances',                     [SurveillanceController::class, 'store']) ->middleware(['auth:sanctum']);
+    Route::get('patients/{patient}/surveillances/{surveillance}',       [SurveillanceController::class, 'show'])  ->middleware(['auth:sanctum']);
+    Route::put('patients/{patient}/surveillances/{surveillance}',       [SurveillanceController::class, 'update'])->middleware(['auth:sanctum']);
+    Route::delete('patients/{patient}/surveillances/{surveillance}',    [SurveillanceController::class, 'destroy'])->middleware(['auth:sanctum']);
+    Route::get('patients/{patient}/surveillances/{date}/by_date',       [SurveillanceController::class, 'find_by_date']) ->middleware(['auth:sanctum']);
+
+    Route::get('patients/{patient}/recapitulations',                    [RecapitulationController::class, 'index']) ->middleware(['auth:sanctum']);
+
+    Route::get('services',                 [ServiceController::class, 'index']) ->middleware(['auth:sanctum', 'ability:super_admin,admin,chef_service,medecin,intern']);
+    Route::post('services',                [ServiceController::class, 'store']) ->middleware(['auth:sanctum', 'ability:super_admin,admin']);
+    Route::get('services/{service}',       [ServiceController::class, 'show'])  ->middleware(['auth:sanctum', 'ability:super_admin,admin']);
+    Route::put('services/{service}',       [ServiceController::class, 'update'])->middleware(['auth:sanctum', 'ability:super_admin,admin']);
+    Route::delete('services/{service}',    [ServiceController::class, 'destroy'])->middleware(['auth:sanctum', 'ability:super_admin,admin']);
+
+    Route::get('hopitaux',                 [HopitalController::class, 'index']) ->middleware(['auth:sanctum', 'ability:super_admin,admin']);
+    Route::post('hopitaux',                [HopitalController::class, 'store']) ->middleware(['auth:sanctum', 'ability:super_admin']);
+    Route::get('hopitaux/{hopital}',       [HopitalController::class, 'show'])  ->middleware(['auth:sanctum', 'ability:super_admin']);
+    Route::put('hopitaux/{hopital}',       [HopitalController::class, 'update'])->middleware(['auth:sanctum', 'ability:super_admin']);
+    Route::delete('hopitaux/{hopital}',    [HopitalController::class, 'destroy'])->middleware(['auth:sanctum', 'ability:super_admin']);
+
+    Route::get('patients/{patient}/accesses',                  [AccessController::class, 'index']) ->middleware(['auth:sanctum']);
+    Route::post('patients/{patient}/accesses',                 [AccessController::class, 'store']) ->middleware(['auth:sanctum']);
+    Route::get('patients/{patient}/accesses/{access}',         [AccessController::class, 'show'])  ->middleware(['auth:sanctum']);
+    Route::put('patients/{patient}/accesses/{access}',         [AccessController::class, 'update'])->middleware(['auth:sanctum']);
+    Route::delete('patients/{patient}/accesses/{access}',      [AccessController::class, 'destroy'])->middleware(['auth:sanctum']);
     
+    Route::get('add-to-log', [LogActivityController::class, 'addToLog']);
+    Route::get('logActivity', [LogActivityController::class, 'logActivityLists'] );
 });
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
+
 
 
 

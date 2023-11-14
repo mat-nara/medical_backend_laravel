@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Exceptions\MissingAbilityException;
+use App\Http\Controllers\Api\RoleController;
+use LogActivity;
+use Auth;
 
 class UserController extends Controller
 {
@@ -17,8 +20,127 @@ class UserController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index() {
-        return User::with('roles')->get();
+    public function index(Request $request)
+    {
+        $loggedInUser = $request->user();
+        $loggedInUser['service']['hopital'] = $loggedInUser->service->hopital;  
+
+        // SUPER ADMIN: can view all user
+        if($loggedInUser->roles[0]->slug == 'super_admin'){
+            return User::with('roles', 'service','service.hopital')->get();
+        }
+
+
+        // ADMIN: Only all user on same hospital
+        if($loggedInUser->roles[0]->slug == 'admin'){
+
+            $hopital_id = $loggedInUser->service->hopital->id;
+
+            $users = User::whereIn('service_id', 
+                                    function($query) use ($hopital_id){ 
+                                        $query->select('id')->from('services')->where('hopital_id', $hopital_id); 
+                                    })
+                        ->with('roles', 'service','service.hopital')
+                        ->get();
+
+            //Filter only user with lower Role
+            $admin_lower_roles = RoleController::generate_strict_lower_role('admin', 'slug');
+            
+            $filtered_user = [$loggedInUser];
+            for ($i=0; $i < count($users); $i++) { 
+                if(in_array($users[$i]->roles[0]->slug, $admin_lower_roles)){
+                    $filtered_user[] = $users[$i];
+                } 
+            }
+            return $filtered_user;
+        }
+
+
+        //CHEF DE SERVICE: Only user on same service
+        if($loggedInUser->roles[0]->slug == 'chef_service'){
+            
+            $service_id = $loggedInUser->service->id;
+            
+            $users = User::where('service_id', $service_id)
+                            ->with('roles', 'service','service.hopital')
+                            ->get();
+
+            return $users;
+
+            //Filter only user with lower Role
+            $chef_service_lower_roles = RoleController::generate_strict_lower_role('chef_service', 'slug');
+            
+            $filtered_user = [$loggedInUser];
+            for ($i=0; $i < count($users); $i++) { 
+                if(in_array($users[$i]->roles[0]->slug, $chef_service_lower_roles)){
+                    $filtered_user[] = $users[$i];
+                } 
+            }
+            return $filtered_user;
+        }
+
+        
+        //MEDECIN: Only user on same service
+        if($loggedInUser->roles[0]->slug == 'medecin'){
+            
+            $service_id = $loggedInUser->service->id;
+            
+            $users = User::where('service_id', $service_id)
+                            ->with('roles', 'service','service.hopital')
+                            ->get();
+            
+            //Filter only user with lower Role
+            $admin_lower_roles = RoleController::generate_strict_lower_role('medecin', 'slug');
+            
+            $filtered_user = [$loggedInUser];
+            for ($i=0; $i < count($users); $i++) { 
+                if(in_array($users[$i]->roles[0]->slug, $admin_lower_roles)){
+                    $filtered_user[] = $users[$i];
+                } 
+            }
+            return $filtered_user;
+        }
+
+        //INTERN: Only user on same service
+        if($loggedInUser->roles[0]->slug == 'intern'){
+            
+            $service_id = $loggedInUser->service->id;
+            
+            $users = User::where('service_id', $service_id)
+                            ->with('roles', 'service','service.hopital')
+                            ->get();
+            
+            //Filter only user with lower Role
+            $admin_lower_roles = RoleController::generate_strict_lower_role('intern', 'slug');
+            
+            $filtered_user = [$loggedInUser];
+            for ($i=0; $i < count($users); $i++) { 
+                if(in_array($users[$i]->roles[0]->slug, $admin_lower_roles)){
+                    $filtered_user[] = $users[$i];
+                } 
+            }
+            return $filtered_user;
+        }
+    }
+
+    public function hierarchie(){
+        $parent_node    = User::with('roles', 'childs', 'service')->where('parent_id', 0)->get();
+        //return $parent_node;
+        $hierarchie     = $this->generate_tree($parent_node);
+        return $hierarchie;
+    }
+
+    public function generate_tree($parent_node){
+        $processed_data = [];
+        foreach ($parent_node as $key => $node) {
+            $current = [];
+            $current['name']        = $node->name;
+            $current['role']        = $node->roles[0]->name;
+            $current['service']     = $node->roles[0]->name == "Chef de service" ? $node->service->name : '';
+            $current['children']    = $this->generate_tree($node->childs);
+            $processed_data[]       = $current;
+        }
+        return $processed_data;
     }
 
     /**
@@ -29,7 +151,9 @@ class UserController extends Controller
      */
     public function store(Request $request) {
         $creds = $request->validate([
-            'name'  => 'nullable|string',
+            'service_id'=> 'integer',
+            'parent_id' => 'integer',
+            'name'      => 'nullable|string',
             'role'      => 'required',
             'email'     => 'required|email',
             'password'  => 'required'
@@ -40,12 +164,18 @@ class UserController extends Controller
             return response(['error' => 1, 'message' => 'user already exists'], 409);
         }
 
+        //$parent_id = 
+        //$user['parent_id'] = intval($request['parent_id']);
+        
+        //return $request->all(); 
 
         if($request->hasFile('avatar')){
 
             $path = $request->file('avatar')->store('public/avatars');
             $storage_path = str_replace('public', 'storage', $path);
             $user = User::create([
+                'service_id'=> $creds['service_id'],
+                'parent_id' => empty($request['parent_id']) ? 0 : $creds['parent_id'],
                 'name'      => $creds['name'],
                 'avatar'    => $storage_path,
                 'email'     => $creds['email'],
@@ -53,16 +183,19 @@ class UserController extends Controller
             ]);
         }else{
             $user = User::create([
+                'service_id'=> $creds['service_id'],
+                'parent_id' => empty($request['parent_id']) ? 0 : $creds['parent_id'],
                 'name'      => $creds['name'],
                 'email'     => $creds['email'],
                 'password'  => Hash::make($creds['password'])
             ]);
         }
 
-        
-
         $user->roles()->attach(Role::where('slug', $creds['role'])->first());
 
+
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' create new User '.' with name: '. $user->name);
         return $user;
     }
 
@@ -74,6 +207,9 @@ class UserController extends Controller
      */
     public function show($id) {
         $user = User::with('roles')->where('id', $id)->first();  
+
+        $loggedInUser = Auth::user();
+        LogActivity::addToLog($loggedInUser->name . ' viewed User '. $user->name. '\'s information');
         return $user;
     }
 
@@ -87,10 +223,13 @@ class UserController extends Controller
      * @throws MissingAbilityException
      */
     public function update(Request $request, User $user) {
-        $user->name         = $request->name        ?? $user->name;
-        $user->email        = $request->email       ?? $user->email;
-        $user->password     = $request->password    ? Hash::make($request->password) : $user->password;
-        
+
+        $user->service_id   = $request->service_id          ?? $user->service_id;
+        $user->parent_id    = $request->parent_id           ?? $user->parent_id;
+        $user->name         = $request->name                ?? $user->name;
+        $user->email        = $request->email               ?? $user->email;
+        $user->password     = isset($request->password) && $request->password != 'null' ? Hash::make($request->password) : $user->password;
+
         if($request->hasFile('avatar')){
             $path           = $request->file('avatar')->store('public/avatars');
             $storage_path   = str_replace('public', 'storage', $path);
@@ -100,16 +239,21 @@ class UserController extends Controller
         if($request->role){
             $user->roles()->sync([Role::where('slug',$request->role)->first()->id]);
         }    
+
+        $user->update();
+
+        $loggedInUser   = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' update the User data '.' with name: '. $user->name);
         
         //check if the logged in user is updating it's own record
-        $loggedInUser = $request->user();
-        if ($loggedInUser->id == $user->id) {
-            $user->update();
-        } elseif ($loggedInUser->tokenCan('admin') ) {
-            $user->update();
-        } else {
-            throw new MissingAbilityException('Not Authorized');
-        }
+        //$loggedInUser = $request->user();
+        //if ($loggedInUser->id == $user->id) {
+        //    $user->update();
+        //} elseif ($loggedInUser->tokenCan('super_admin') ) {
+        //    $user->update();
+        //} else {
+        //    throw new MissingAbilityException('Not Authorized');
+        //}
 
     }
 
@@ -133,6 +277,8 @@ class UserController extends Controller
 
         $user->delete();
 
+        $loggedInUser   = Auth::user();
+        LogActivity::addToLog($loggedInUser->name . ' deleted the User data '.' with name: '. $user->name);
         return response(['error' => 0, 'message' => 'user deleted']);
     }
 
