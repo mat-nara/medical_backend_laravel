@@ -15,8 +15,8 @@ class CreateServicesTable extends Migration
     {
         Schema::create('services', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('hopital_id')->references('id')->on('hopitals');
-            $table->foreignId('head_id')->references('id')->on('users');
+            $table->unsignedBigInteger('hopital_id')->references('id')->on('hopitals');
+            $table->unsignedBigInteger('head_id')->references('id')->on('users');
             $table->string('name');
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP'));
