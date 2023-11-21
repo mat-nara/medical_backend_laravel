@@ -15,6 +15,7 @@ class CreateRolesTable extends Migration
     {
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('parent_id');
             $table->string('name');
             $table->string('slug')->index();
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));

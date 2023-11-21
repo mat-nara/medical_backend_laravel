@@ -13,14 +13,14 @@ class ForeignKeyConstraint extends Migration
      */
     public function up()
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->foreign('service_id')->references('id')->on('services');
-        });
+        //Schema::table('users', function (Blueprint $table) {
+        //    $table->foreign('service_id')->references('id')->on('services');
+        //});
 
-        Schema::table('services', function (Blueprint $table) {
-            $table->foreign('hopital_id')->references('id')->on('hopitals');
-            $table->foreign('head_id')->references('id')->on('users');
-        });
+        //Schema::table('services', function (Blueprint $table) {
+        //    $table->foreign('hopital_id')->references('id')->on('hopitals');
+        //    $table->foreign('head_id')->references('id')->on('users');
+        //});
     }
 
     /**
