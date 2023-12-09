@@ -17,4 +17,15 @@ class LogActivity extends Model
         'agent',
         'user_id'
     ];
+
+    /**
+     * get the date value.
+     * 
+     * @param string $value
+     * @return string
+     */
+    public function getCreatedAtAttribute($value)
+    {
+        return date('d/m/Y h:i:s', strtotime($value));
+    }
 }

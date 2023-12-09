@@ -43,11 +43,15 @@ class AccessController extends Controller
     {
         $user       = Auth::user();
         $patient    = Patient::find($patient);
-        $owners     = $patient->owners->where('id', $user->id);
-        $authorized = count($owners) > 0 ? true : false;
 
-        if(!$authorized){
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist or you are not authorized'], 403); 
+        //Grant add access to super admin and restrict for all other
+        if( ! ($user->roles[0]->slug == 'super_admin')){
+            $owners     = $patient->owners->where('id', $user->id);
+            $authorized = count($owners) > 0 ? true : false;
+
+            if(!$authorized){
+                return response(['error' => 1, 'message' => 'Patient doesn\'t exist or you are not authorized'], 403); 
+            }
         }
 
         $acces_user = User::where('email', $request->email)->first();

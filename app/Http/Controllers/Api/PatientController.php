@@ -122,9 +122,15 @@ class PatientController extends Controller
      */
     public function show($patient)
     {
-        $user       = Auth::user();
-        $patient    = $user->patients()->where('patient_id', $patient)->first();
+        $loggedInUser       = Auth::user();
 
+        //Grant access to superadmin user
+        if($loggedInUser->roles[0]->slug == 'super_admin'){
+            return Patient::find($patient);
+        }
+
+        //Limited access for other roles
+        $patient    = $loggedInUser->patients()->where('patient_id', $patient)->first();
         if(!$patient){
             return response(['error' => 1, 'message' => 'Patient doesn\'t exist or you don\'t have access'], 404);
         }
@@ -140,15 +146,22 @@ class PatientController extends Controller
      */
     public function show_with_observation($patient)
     {
-        $user       = Auth::user();
-        $patient    = $user->patients()->with('observation')->where('patient_id', $patient)->first();
+        $loggedInUser = Auth::user();
 
+        //Grant access to superadmin user
+        if($loggedInUser->roles[0]->slug == 'super_admin'){
+            $patient = Patient::with('observation')->find($patient);
+            LogActivity::addToLog($loggedInUser->name . ' viewed Patient '. $patient->nom.' '. $patient->prenoms. '\'s information');
+            return $patient;
+        }
+
+        //For other users        
+        $patient    = $loggedInUser->patients()->with('observation')->where('patient_id', $patient)->first();
         if(!$patient){
             return response(['error' => 1, 'message' => 'Patient doesn\'t exist or you don\'t have access'], 404);
         }
 
-
-        $loggedInUser = Auth::user();
+        
         LogActivity::addToLog($loggedInUser->name . ' viewed Patient '. $patient->nom.' '. $patient->prenoms. '\'s information');
         return $patient;
     }

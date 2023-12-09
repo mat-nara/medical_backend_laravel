@@ -175,8 +175,9 @@ Route::group(['middleware'=> ['cors']], function(){
     Route::put('patients/{patient}/accesses/{access}',         [AccessController::class, 'update'])->middleware(['auth:sanctum']);
     Route::delete('patients/{patient}/accesses/{access}',      [AccessController::class, 'destroy'])->middleware(['auth:sanctum']);
     
-    Route::get('add-to-log', [LogActivityController::class, 'addToLog']);
-    Route::get('logActivity', [LogActivityController::class, 'logActivityLists'] );
+    Route::post('log-activities',      [LogActivityController::class, 'index'] )->middleware(['auth:sanctum']);
+    //Route::get('add-to-log',        [LogActivityController::class, 'addToLog']);
+    
 });
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
