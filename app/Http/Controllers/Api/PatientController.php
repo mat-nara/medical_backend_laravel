@@ -8,6 +8,8 @@ use App\Models\Patient;
 use App\Models\Observation;
 use LogActivity;
 use Auth;
+use DB;
+use Carbon\Carbon;
 
 
 class PatientController extends Controller
@@ -34,15 +36,31 @@ class PatientController extends Controller
      */
     public function index(Request $request)
     {
-        $loggedInUser = $request->user();
+        $key_word       = $request->key_word;
+        $start_date     = $request->start_date;
+        $end_date       = $request->end_date;
+        $row_number_max = $request->row_number_max;
 
-        // SUPER ADMIN: can view all patient
+        $loggedInUser = $request->user();
         if($loggedInUser->roles[0]->slug == 'super_admin'){
-            return Patient::all();
+            // SUPER ADMIN: can view all patient
+            $query = DB::table('patients');
+        }else{
+             // OTHER USER: Only authorized patient
+            $query = $loggedInUser->patients();
+        }
+       
+        if ($key_word !== null && $key_word != '') {
+            $query->where('nom', 'like', '%'.$key_word.'%');
+            $query->orWhere('prenoms', 'like', '%'.$key_word.'%');
         }
 
-        // OTHER USER: Only authorized patient
-        return $loggedInUser->patients()->get();
+        $query->whereBetween('date_entree',     [$request->start_date, $request->end_date]);
+        $query->orWhereBetween('date_sortie',   [$request->start_date, $request->end_date]);
+        $query->orderBy('created_at', 'desc');
+        $query->limit($request->row_number_max);
+        $patients = $query->get();
+        return $patients;
     }
 
     /**
@@ -71,9 +89,12 @@ class PatientController extends Controller
         $patient->telephone                 = $request->telephone;              
         $patient->personne_en_charge        = $request->personne_en_charge;     
         $patient->contact_pers_en_charge    = $request->contact_pers_en_charge; 
-        $patient->date_entree               = $request->date_entree;        
         $patient->date_sortie               = $request->date_sortie;            
         $patient->motif_entree              = $request->motif_entree;   
+
+        if($request->date_entree){
+            $patient->date_entree           = $request->date_entree;       
+        } 
         
         $patient->save();
 
@@ -204,9 +225,12 @@ class PatientController extends Controller
         $patient->telephone                 = $request->telephone               ?? $patient->telephone;
         $patient->personne_en_charge        = $request->personne_en_charge      ?? $patient->personne_en_charge;
         $patient->contact_pers_en_charge    = $request->contact_pers_en_charge  ?? $patient->contact_pers_en_charge;
-        $patient->date_entree               = $request->date_entree             ?? $patient->date_entree;
         $patient->date_sortie               = $request->date_sortie             ?? $patient->date_sortie;
         $patient->motif_entree              = $request->motif_entree            ?? $patient->motif_entree;
+
+        if($request->date_entree){
+            $patient->date_entree           = $request->date_entree;       
+        } 
         
 
         $patient->update();

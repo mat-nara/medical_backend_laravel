@@ -65,7 +65,7 @@ Route::group(['middleware'=> ['cors']], function(){
     Route::put('roles/{role}',      [RoleController::class, 'update'])  ->middleware(['auth:sanctum']);
     Route::delete('roles/{role}',   [RoleController::class, 'destroy']) ->middleware(['auth:sanctum']);
 
-    Route::get('patients',              [PatientController::class, 'index'])     ->middleware(['auth:sanctum']);
+    Route::post('patients/search',      [PatientController::class, 'index'])     ->middleware(['auth:sanctum']);
     Route::post('patients',             [PatientController::class, 'store'])     ->middleware(['auth:sanctum']);
     Route::get('patients/{patient}',    [PatientController::class, 'show'])      ->middleware(['auth:sanctum']);
     Route::get('patients/{patient}/observation', [PatientController::class, 'show_with_observation'])->middleware(['auth:sanctum']);

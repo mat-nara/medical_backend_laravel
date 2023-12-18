@@ -31,8 +31,8 @@ class CreatePatientsTable extends Migration
             $table->string('telephone')->nullable();
             $table->string('personne_en_charge')->nullable();
             $table->string('contact_pers_en_charge')->nullable();
-            $table->string('date_entree')->nullable();
-            $table->string('date_sortie')->nullable();
+            $table->timestamp('date_entree')->default(DB::raw('CURRENT_TIMESTAMP'));
+            $table->timestamp('date_sortie')->nullable();
             $table->string('motif_entree')->nullable();
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP'));
