@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Antibiogramme;
 use LogActivity;
+use PatientAccess;
 use Auth;
 
 class AntibiogrammeController extends Controller
@@ -18,8 +19,14 @@ class AntibiogrammeController extends Controller
      */
     public function index($patient)
     {
+        //Check for permission access
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Antibiogramme data isn\'t available'], 404);
+        }
+
         $antibiogrammes = Antibiogramme::where('patient_id', $patient)->get();
-        return $antibiogrammes;
+        return ['data' =>  $antibiogrammes, 'permission' => $permission];
     }
 
     /**
@@ -30,14 +37,17 @@ class AntibiogrammeController extends Controller
      */
     public function store(Request $request, $patient)
     {
-        $patient = Patient::find($patient);
-        if(!$patient){
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist'], 404);
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Antibiogramme data'], 404);
         }
 
-        $antibiogramme        = new Antibiogramme;
-        $antibiogramme->date  = $request->date;
-        $antibiogramme->value = $request->value;
+        $patient = Patient::find($patient);
+        $antibiogramme              = new Antibiogramme;
+        $antibiogramme->date        = $request->date;
+        $antibiogramme->value       = $request->value;
+        $antibiogramme->conclusion  = $request->conclusion;
         $patient->biochimies()->save($antibiogramme);
 
         $loggedInUser = $request->user();
@@ -53,7 +63,14 @@ class AntibiogrammeController extends Controller
      */
     public function show($patient, $antibiogramme)
     {
-        return Antibiogramme::find($antibiogramme);
+        //Check for permission access 
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Antibiogramme data isn\'t available'], 404);
+        }
+
+        $antibiogramme = Antibiogramme::find($antibiogramme);
+        return ['data' =>  $antibiogramme, 'permission' => $permission];
     }
 
     /**
@@ -65,11 +82,16 @@ class AntibiogrammeController extends Controller
      */
     public function update(Request $request, $patient, $antibiogramme)
     {
-        $antibiogramme = Antibiogramme::find($antibiogramme);
-        
-        $antibiogramme->date  = $request->date    ?? $antibiogramme->date;
-        $antibiogramme->value = $request->value   ?? $antibiogramme->value;
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Antibiogramme data'], 404);
+        }
 
+        $antibiogramme = Antibiogramme::find($antibiogramme);
+        $antibiogramme->date        = $request->date        ?? $antibiogramme->date;
+        $antibiogramme->value       = $request->value       ?? $antibiogramme->value;
+        $antibiogramme->conclusion  = $request->conclusion  ?? $antibiogramme->conclusion;
         $antibiogramme->update();
 
         $patient        = Patient::find($patient);
@@ -86,6 +108,12 @@ class AntibiogrammeController extends Controller
      */
     public function destroy($patient, $antibiogramme)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Antibiogramme data'], 404);
+        }
+
         $antibiogramme = Antibiogramme::find($antibiogramme);
         $antibiogramme->delete();
 

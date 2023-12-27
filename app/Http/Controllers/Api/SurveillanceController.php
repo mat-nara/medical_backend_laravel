@@ -19,7 +19,7 @@ class SurveillanceController extends Controller
      */
     public function index($patient)
     {
-        return Surveillance::where('patient_id', $patient)->get();
+        return Surveillance::where('patient_id', $patient)->orderBy('date', 'asc')->get();
     }
 
     /**

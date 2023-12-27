@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\ExamenFonctionnel;
 use LogActivity;
+use PatientAccess;
 use Auth;
 
 class ExamenFonctionnelController extends Controller
@@ -18,7 +19,14 @@ class ExamenFonctionnelController extends Controller
      */
     public function index($patient)
     {
-        return ExamenFonctionnel::where('patient_id', $patient)->get();
+        //Check for permission access
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient ExamenFonctionnel data isn\'t available'], 404);
+        }
+
+        $examen_fonctionnel = ExamenFonctionnel::where('patient_id', $patient)->get();
+        return ['data' =>  $examen_fonctionnel, 'permission' => $permission];
     }
 
     /**
@@ -29,15 +37,16 @@ class ExamenFonctionnelController extends Controller
      */
     public function store(Request $request, $patient)
     {
-        $patient = Patient::find($patient);
-        if(!$patient){
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist'], 404);
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s ExamenFonctionnel data'], 404);
         }
 
+        $patient = Patient::find($patient);
         $examen_fonctionnel        = new ExamenFonctionnel;
         $examen_fonctionnel->date  = $request->date;
         $examen_fonctionnel->value = $request->value;
-
         $patient->examens_fonctionnels()->save($examen_fonctionnel);
 
         $loggedInUser = $request->user();
@@ -53,7 +62,14 @@ class ExamenFonctionnelController extends Controller
      */
     public function show($patient, $examen_fonctionnel)
     {
-        return ExamenFonctionnel::find($examen_fonctionnel);
+        //Check for permission access 
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient ExamenFonctionnel data isn\'t available'], 404);
+        }
+
+        $examen_fonctionnel = ExamenFonctionnel::find($examen_fonctionnel);
+        return ['data' =>  $examen_fonctionnel, 'permission' => $permission];
     }
 
     /**
@@ -65,11 +81,15 @@ class ExamenFonctionnelController extends Controller
      */
     public function update(Request $request, $patient, $examen_fonctionnel)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s ExamenFonctionnel data'], 404);
+        }
+
         $examen_fonctionnel = ExamenFonctionnel::find($examen_fonctionnel);
-        
         $examen_fonctionnel->date  = $request->date    ?? $examen_fonctionnel->date;
         $examen_fonctionnel->value = $request->value   ?? $examen_fonctionnel->value;
-
         $examen_fonctionnel->update();
 
         $patient        = Patient::find($patient);
@@ -86,6 +106,12 @@ class ExamenFonctionnelController extends Controller
      */
     public function destroy($patient, $examen_fonctionnel)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Echographie data'], 404);
+        }
+        
         $examen_fonctionnel = ExamenFonctionnel::find($examen_fonctionnel);
         $examen_fonctionnel->delete();
 

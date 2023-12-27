@@ -14,6 +14,7 @@ class Patient extends Model
 
     protected $fillable = [
         'id', 
+        'service_id',
         'n_dossier', 
         'n_bulletin', 
         'nom', 
@@ -31,8 +32,41 @@ class Patient extends Model
         'contact_pers_en_charge', 
         'date_entree', 
         'date_sortie',
+        'heure_entree',
+        'heure_sortie',
         'motif_entree', 
     ];
+    
+    /**
+     * get the heure_entree value.
+     * 
+     * @param string $value
+     * @return string
+     */
+    public function getHeureEntreeAttribute($value)
+    {
+        return date('H:i', strtotime($value));
+    }
+
+    /**
+     * get the heure_sortie value.
+     * 
+     * @param string $value
+     * @return string
+     */
+    public function getHeureSortieAttribute($value)
+    {
+        return date('H:i', strtotime($value));
+    }
+
+    /**
+     * Get the observation for the article.
+     * 
+     */
+    public function service()
+    {
+        return $this->belongsTo(Service::class, 'service_id', 'id');
+    }
 
     /**
      * Get the observation for the article.

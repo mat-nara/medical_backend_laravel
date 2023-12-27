@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Radiologie;
 use LogActivity;
+use PatientAccess;
 use Auth;
 
 class RadiologieController extends Controller
@@ -18,7 +19,14 @@ class RadiologieController extends Controller
      */
     public function index($patient)
     {
-        return Radiologie::where('patient_id', $patient)->get();
+        //Check for permission access
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Radiologie data isn\'t available'], 404);
+        }
+
+        $radiologies = Radiologie::where('patient_id', $patient)->get();
+        return ['data' =>  $radiologies, 'permission' => $permission];
     }
 
     /**
@@ -29,15 +37,16 @@ class RadiologieController extends Controller
      */
     public function store(Request $request, $patient)
     {
-        $patient = Patient::find($patient);
-        if(!$patient){
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist'], 404);
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Radiologie data'], 404);
         }
 
+        $patient = Patient::find($patient);
         $radiologie        = new Radiologie;
         $radiologie->date  = $request->date;
         $radiologie->value = $request->value;
-
         $patient->radiologies()->save($radiologie);
 
         $loggedInUser = $request->user();
@@ -53,7 +62,14 @@ class RadiologieController extends Controller
      */
     public function show($patient, $radiologie)
     {
-        return Radiologie::find($radiologie);
+        //Check for permission access 
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Radiologie data isn\'t available'], 404);
+        }
+
+        $radiologie = Radiologie::find($radiologie);
+        return ['data' =>  $radiologie, 'permission' => $permission];
     }
 
     /**
@@ -65,11 +81,15 @@ class RadiologieController extends Controller
      */
     public function update(Request $request, $patient, $radiologie)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Radiologie data'], 404);
+        }
+
         $radiologie = Radiologie::find($radiologie);
-        
         $radiologie->date  = $request->date    ?? $radiologie->date;
         $radiologie->value = $request->value   ?? $radiologie->value;
-
         $radiologie->update();
 
         $patient        = Patient::find($patient);
@@ -86,6 +106,12 @@ class RadiologieController extends Controller
      */
     public function destroy($patient, $radiologie)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Radiologie data'], 404);
+        }
+
         $radiologie = Radiologie::find($radiologie);
         $radiologie->delete();
 

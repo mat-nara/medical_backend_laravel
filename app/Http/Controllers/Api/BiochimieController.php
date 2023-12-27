@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Biochimie;
 use LogActivity;
+use PatientAccess;
 use Auth;
 
 class BiochimieController extends Controller
@@ -18,8 +19,14 @@ class BiochimieController extends Controller
      */
     public function index($patient)
     {
+        //Check for permission access
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Biochimie data isn\'t available'], 404);
+        }
+
         $biochimies = Biochimie::where('patient_id', $patient)->get();
-        return $biochimies;
+        return ['data' =>  $biochimies, 'permission' => $permission] ;
     }
 
     /**
@@ -30,14 +37,17 @@ class BiochimieController extends Controller
      */
     public function store(Request $request, $patient)
     {
-        $patient = Patient::find($patient);
-        if(!$patient){
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist'], 404);
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Biochimie data'], 404);
         }
 
-        $biochimie        = new Biochimie;
-        $biochimie->date  = $request->date;
-        $biochimie->value = $request->value;
+        $patient = Patient::find($patient);
+        $biochimie              = new Biochimie;
+        $biochimie->date        = $request->date;
+        $biochimie->value       = $request->value;
+        $biochimie->conclusion  = $request->conclusion;
         $patient->biochimies()->save($biochimie);
 
         $loggedInUser = $request->user();
@@ -53,7 +63,14 @@ class BiochimieController extends Controller
      */
     public function show($patient, $biochimie)
     {
-        return Biochimie::find($biochimie);
+        //Check for permission access 
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Hematologie data isn\'t available'], 404);
+        }
+
+        $biochimie =  Biochimie::find($biochimie);
+        return ['data' =>  $biochimie, 'permission' => $permission];
     }
 
     /**
@@ -65,11 +82,16 @@ class BiochimieController extends Controller
      */
     public function update(Request $request, $patient, $biochimie)
     {
-        $biochimie = Biochimie::find($biochimie);
-        
-        $biochimie->date  = $request->date    ?? $biochimie->date;
-        $biochimie->value = $request->value   ?? $biochimie->value;
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Biochimie data'], 404);
+        }
 
+        $biochimie = Biochimie::find($biochimie);
+        $biochimie->date        = $request->date        ?? $biochimie->date;
+        $biochimie->value       = $request->value       ?? $biochimie->value;
+        $biochimie->conclusion  = $request->conclusion  ?? $biochimie->conclusion;
         $biochimie->update();
 
         $patient        = Patient::find($patient);
@@ -86,6 +108,12 @@ class BiochimieController extends Controller
      */
     public function destroy($patient, $biochimie)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Biochimie data'], 404);
+        }
+
         $biochimie = Biochimie::find($biochimie);
         $biochimie->delete();
 

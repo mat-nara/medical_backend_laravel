@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class AutrePrelevementBiologie extends Model
 {
     use HasFactory;
-    protected $fillable = ['patient_id', 'date', 'value'];
+    protected $fillable = ['patient_id', 'date', 'value', 'conclusion'];
 
     /**
      * The attributes that should be cast.

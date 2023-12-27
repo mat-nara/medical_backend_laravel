@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Urine;
 use App\Models\Patient;
 use LogActivity;
+use PatientAccess;
 use Auth;
 
 class UrineController extends Controller
@@ -18,8 +19,14 @@ class UrineController extends Controller
      */
     public function index($patient)
     {
+        //Check for permission access
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Urine data isn\'t available'], 404);
+        }
+
         $urines = Urine::where('patient_id', $patient)->get();
-        return $urines;
+        return ['data' =>  $urines, 'permission' => $permission];
     }
 
     /**
@@ -30,14 +37,17 @@ class UrineController extends Controller
      */
     public function store(Request $request, $patient)
     {
-        $patient = Patient::find($patient);
-        if(!$patient){
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist'], 404);
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Urine data'], 404);
         }
 
-        $urine        = new Urine;
-        $urine->date  = $request->date;
-        $urine->value = $request->value;
+        $patient = Patient::find($patient);
+        $urine              = new Urine;
+        $urine->date        = $request->date;
+        $urine->value       = $request->value;
+        $urine->conclusion  = $request->conclusion;
         $patient->urines()->save($urine);
 
         $loggedInUser = $request->user();
@@ -53,7 +63,14 @@ class UrineController extends Controller
      */
     public function show($patient, $urine)
     {
-        return Urine::find($urine);
+        //Check for permission access 
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Urine data isn\'t available'], 404);
+        }
+
+        $urine = Urine::find($urine);
+        return ['data' =>  $urine, 'permission' => $permission];
     }
 
     /**
@@ -65,11 +82,16 @@ class UrineController extends Controller
      */
     public function update(Request $request, $patient, $urine)
     {
-        $urine = Urine::find($urine);
-        
-        $urine->date  = $request->date    ?? $urine->date;
-        $urine->value = $request->value   ?? $urine->value;
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Urine data'], 404);
+        }
 
+        $urine = Urine::find($urine);
+        $urine->date        = $request->date        ?? $urine->date;
+        $urine->value       = $request->value       ?? $urine->value;
+        $urine->conclusion  = $request->conclusion  ?? $urine->conclusion;
         $urine->update();
 
         $patient        = Patient::find($patient);
@@ -86,6 +108,12 @@ class UrineController extends Controller
      */
     public function destroy($patient, $urine)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Urine data'], 404);
+        }
+
         $urine = Urine::find($urine);
         $urine->delete();
 

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\AutreBiologie;
 use LogActivity;
+use PatientAccess;
 use Auth;
 
 class AutreBiologieController extends Controller
@@ -18,8 +19,14 @@ class AutreBiologieController extends Controller
      */
     public function index($patient)
     {
+        //Check for permission access
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient AutreBiologie data isn\'t available'], 404);
+        }
+
         $autre_biologies = AutreBiologie::where('patient_id', $patient)->get();
-        return $autre_biologies;
+        return ['data' =>  $autre_biologies, 'permission' => $permission] ;
     }
 
     /**
@@ -30,14 +37,17 @@ class AutreBiologieController extends Controller
      */
     public function store(Request $request, $patient)
     {
-        $patient = Patient::find($patient);
-        if(!$patient){
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist'], 404);
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s AutreBiologie data'], 404);
         }
 
-        $autre_biologie        = new AutreBiologie;
-        $autre_biologie->date  = $request->date;
-        $autre_biologie->value = $request->value;
+        $patient = Patient::find($patient);
+        $autre_biologie             = new AutreBiologie;
+        $autre_biologie->date       = $request->date;
+        $autre_biologie->value      = $request->value;
+        $autre_biologie->conclusion = $request->conclusion;
         $patient->biochimies()->save($autre_biologie);
 
         $loggedInUser = $request->user();
@@ -53,7 +63,14 @@ class AutreBiologieController extends Controller
      */
     public function show($patient, $autre_biologie)
     {
-        return AutreBiologie::find($autre_biologie);
+        //Check for permission access 
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient AutreBiologie data isn\'t available'], 404);
+        }
+
+        $autre_biologie = AutreBiologie::find($autre_biologie);
+        return ['data' =>  $autre_biologie, 'permission' => $permission];
     }
 
     /**
@@ -65,11 +82,16 @@ class AutreBiologieController extends Controller
      */
     public function update(Request $request, $patient, $autre_biologie)
     {
-        $autre_biologie = AutreBiologie::find($autre_biologie);
-        
-        $autre_biologie->date  = $request->date    ?? $autre_biologie->date;
-        $autre_biologie->value = $request->value   ?? $autre_biologie->value;
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s AutreBiologie data'], 404);
+        }
 
+        $autre_biologie = AutreBiologie::find($autre_biologie);
+        $autre_biologie->date       = $request->date        ?? $autre_biologie->date;
+        $autre_biologie->value      = $request->value       ?? $autre_biologie->value;
+        $autre_biologie->conclusion = $request->conclusion  ?? $autre_biologie->conclusion;
         $autre_biologie->update();
 
         $patient        = Patient::find($patient);
@@ -86,6 +108,12 @@ class AutreBiologieController extends Controller
      */
     public function destroy($patient, $autre_biologie)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s AutreBiologie data'], 404);
+        }
+
         $autre_biologie = AutreBiologie::find($autre_biologie);
         $autre_biologie->delete();
 

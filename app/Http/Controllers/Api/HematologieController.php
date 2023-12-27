@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Hematologie;
 use LogActivity;
+use PatientAccess;
 use Auth;
 
 class HematologieController extends Controller
@@ -18,8 +19,14 @@ class HematologieController extends Controller
      */
     public function index($patient)
     {
+        //Check for permission access
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Hematologie data isn\'t available'], 404);
+        }
+
         $hematologies = Hematologie::where('patient_id', $patient)->get();
-        return $hematologies;
+        return ['data' =>  $hematologies, 'permission' => $permission] ;
     }
 
     /**
@@ -30,14 +37,17 @@ class HematologieController extends Controller
      */
     public function store(Request $request, $patient)
     {
-        $patient = Patient::find($patient);
-        if(!$patient){
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist'], 404);
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Hematologie data'], 404);
         }
 
-        $hematologie        = new Hematologie;
-        $hematologie->date  = $request->date;
-        $hematologie->value = $request->value;
+        $patient = Patient::find($patient);
+        $hematologie                = new Hematologie;
+        $hematologie->date          = $request->date;
+        $hematologie->value         = $request->value;
+        $hematologie->conclusion    = $request->conclusion;
         $patient->hematologies()->save($hematologie);
 
         $loggedInUser = $request->user();
@@ -53,7 +63,14 @@ class HematologieController extends Controller
      */
     public function show($patient, $hematologie)
     {
-        return Hematologie::find($hematologie);
+        //Check for permission access 
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Hematologie data isn\'t available'], 404);
+        }
+
+        $hematologie = Hematologie::find($hematologie);
+        return ['data' =>  $hematologie, 'permission' => $permission];
     }
 
     /**
@@ -65,11 +82,16 @@ class HematologieController extends Controller
      */
     public function update(Request $request, $patient, $hematologie)
     {
-        $hematologie = Hematologie::find($hematologie);
-        
-        $hematologie->date  = $request->date    ?? $hematologie->date;
-        $hematologie->value = $request->value   ?? $hematologie->value;
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Hematologie data'], 404);
+        }
 
+        $hematologie = Hematologie::find($hematologie);
+        $hematologie->date          = $request->date        ?? $hematologie->date;
+        $hematologie->value         = $request->value       ?? $hematologie->value;
+        $hematologie->conclusion    = $request->conclusion  ?? $hematologie->conclusion;
         $hematologie->update();
 
         $patient        = Patient::find($patient);
@@ -86,6 +108,12 @@ class HematologieController extends Controller
      */
     public function destroy($patient, $hematologie)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Hematologie data'], 404);
+        }
+
         $hematologie = Hematologie::find($hematologie);
         $hematologie->delete();
 

@@ -16,6 +16,7 @@ class CreatePatientsTable extends Migration
         Schema::create('patients', function (Blueprint $table) {
             $table->id();
             #$table->string('id', 20)->primary();
+            $table->unsignedBigInteger('service_id');
             $table->string('n_dossier')->nullable();
             $table->string('n_bulletin')->nullable();
             $table->string('nom')->nullable();
@@ -31,9 +32,12 @@ class CreatePatientsTable extends Migration
             $table->string('telephone')->nullable();
             $table->string('personne_en_charge')->nullable();
             $table->string('contact_pers_en_charge')->nullable();
-            $table->timestamp('date_entree')->default(DB::raw('CURRENT_TIMESTAMP'));
-            $table->timestamp('date_sortie')->nullable();
+            $table->date('date_entree')->nullable();
+            $table->date('date_sortie')->nullable();
+            $table->time('heure_entree')->nullable();
+            $table->time('heure_sortie')->nullable();
             $table->string('motif_entree')->nullable();
+
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP'));
 

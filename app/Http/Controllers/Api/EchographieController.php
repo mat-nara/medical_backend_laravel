@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Patient;
 use App\Models\Echographie;
 use LogActivity;
+use PatientAccess;
 use Auth;
 
 class EchographieController extends Controller
@@ -18,7 +19,14 @@ class EchographieController extends Controller
      */
     public function index($patient)
     {
-        return Echographie::where('patient_id', $patient)->get();
+        //Check for permission access
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Echographie data isn\'t available'], 404);
+        }
+
+        $echographie = Echographie::where('patient_id', $patient)->get();
+        return ['data' =>  $echographie, 'permission' => $permission];
     }
 
     /**
@@ -29,15 +37,16 @@ class EchographieController extends Controller
      */
     public function store(Request $request, $patient)
     {
-        $patient = Patient::find($patient);
-        if(!$patient){
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist'], 404);
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Echographie data'], 404);
         }
 
+        $patient = Patient::find($patient);
         $echographie        = new Echographie;
         $echographie->date  = $request->date;
         $echographie->value = $request->value;
-
         $patient->echographies()->save($echographie);
 
         $loggedInUser = $request->user();
@@ -53,7 +62,14 @@ class EchographieController extends Controller
      */
     public function show($patient, $echographie)
     {
-        return Echographie::find($echographie);
+        //Check for permission access 
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient Echographie data isn\'t available'], 404);
+        }
+
+        $echographie = Echographie::find($echographie);
+        return ['data' =>  $echographie, 'permission' => $permission];
     }
 
     /**
@@ -65,11 +81,15 @@ class EchographieController extends Controller
      */
     public function update(Request $request, $patient, $echographie)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Echographie data'], 404);
+        }
+
         $echographie = Echographie::find($echographie);
-        
         $echographie->date  = $request->date    ?? $echographie->date;
         $echographie->value = $request->value   ?? $echographie->value;
-
         $echographie->update();
 
         $patient        = Patient::find($patient);
@@ -86,6 +106,12 @@ class EchographieController extends Controller
      */
     public function destroy($patient, $echographie)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Echographie data'], 404);
+        }
+
         $echographie = Echographie::find($echographie);
         $echographie->delete();
 

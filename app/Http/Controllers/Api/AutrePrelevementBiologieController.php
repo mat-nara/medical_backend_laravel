@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\AutrePrelevementBiologie;
 use App\Models\Patient;
 use LogActivity;
+use PatientAccess;
 use Auth;
 
 class AutrePrelevementBiologieController extends Controller
@@ -18,8 +19,14 @@ class AutrePrelevementBiologieController extends Controller
      */
     public function index($patient)
     {
+        //Check for permission access
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient AutrePrelevementBiologie data isn\'t available'], 404);
+        }
+
         $autres_prelevements_biologies = AutrePrelevementBiologie::where('patient_id', $patient)->get();
-        return $autres_prelevements_biologies;
+        return ['data' =>  $autres_prelevements_biologies, 'permission' => $permission];
     }
 
     /**
@@ -30,14 +37,17 @@ class AutrePrelevementBiologieController extends Controller
      */
     public function store(Request $request, $patient)
     {
-        $patient = Patient::find($patient);
-        if(!$patient){
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist'], 404);
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s AutrePrelevementBiologie data'], 404);
         }
 
-        $autre_prelevement        = new AutrePrelevementBiologie;
-        $autre_prelevement->date  = $request->date;
-        $autre_prelevement->value = $request->value;
+        $patient = Patient::find($patient);
+        $autre_prelevement              = new AutrePrelevementBiologie;
+        $autre_prelevement->date        = $request->date;
+        $autre_prelevement->value       = $request->value;
+        $autre_prelevement->conclusion  = $request->conclusion;
         $patient->autres_prelevements_biologies()->save($autre_prelevement);
 
         $loggedInUser = $request->user();
@@ -53,7 +63,14 @@ class AutrePrelevementBiologieController extends Controller
      */
     public function show($patient, $autre_prelevement)
     {
-        return AutrePrelevementBiologie::find($autre_prelevement);
+        //Check for permission access 
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Patient AutrePrelevementBiologie data isn\'t available'], 404);
+        }
+
+        $autre_prelevement = AutrePrelevementBiologie::find($autre_prelevement);
+        return ['data' =>  $autre_prelevement, 'permission' => $permission];
     }
 
     /**
@@ -65,11 +82,16 @@ class AutrePrelevementBiologieController extends Controller
      */
     public function update(Request $request, $patient, $autre_prelevement)
     {
-        $autre_prelevement = AutrePrelevementBiologie::find($autre_prelevement);
-        
-        $autre_prelevement->date  = $request->date    ?? $autre_prelevement->date;
-        $autre_prelevement->value = $request->value   ?? $autre_prelevement->value;
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s AutrePrelevementBiologie data'], 404);
+        }
 
+        $autre_prelevement = AutrePrelevementBiologie::find($autre_prelevement);
+        $autre_prelevement->date        = $request->date        ?? $autre_prelevement->date;
+        $autre_prelevement->value       = $request->value       ?? $autre_prelevement->value;
+        $autre_prelevement->conclusion  = $request->conclusion  ?? $autre_prelevement->conclusion;
         $autre_prelevement->update();
 
         $patient        = Patient::find($patient);
@@ -86,6 +108,12 @@ class AutrePrelevementBiologieController extends Controller
      */
     public function destroy($patient, $autre_prelevement)
     {
+        //Check for permission access
+        $permission     = PatientAccess::viewPermission($patient);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update patient\'s AutrePrelevementBiologie data'], 404);
+        }
+
         $autre_prelevement = AutrePrelevementBiologie::find($autre_prelevement);
         $autre_prelevement->delete();
 

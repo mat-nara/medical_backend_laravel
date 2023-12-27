@@ -44,4 +44,13 @@ class Service extends Model
         return $this->hasMany(User::class, 'service_id', 'id');
     }
 
+    /**
+     * Get the users for the service.
+     * 
+     */
+    public function patients()
+    {
+        return $this->hasMany(Patient::class, 'service_id', 'id');
+    }
+
 }
