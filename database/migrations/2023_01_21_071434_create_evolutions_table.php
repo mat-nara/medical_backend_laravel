@@ -17,10 +17,10 @@ class CreateEvolutionsTable extends Migration
             $table->id();
             $table->foreignId('patient_id')->constrained()->cascadeOnDelete();
             $table->date('date');
-            $table->json('indicateur');
-            $table->json('cliniques');
-            $table->json('paracliniques');
-            $table->json('traitement');
+            $table->json('indicateur')->nullable();
+            $table->json('cliniques')->nullable();
+            $table->json('paracliniques')->nullable();
+            $table->json('traitement')->nullable();
             $table->text('avis')->nullable();
             $table->text('conclusion')->nullable();
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
