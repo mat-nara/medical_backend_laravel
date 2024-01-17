@@ -10,6 +10,7 @@ use App\Models\Evolution;
 use Carbon\Carbon;
 use LogActivity;
 use Auth;
+use PatientAccess;
 
 
 class SurveillanceController extends Controller
@@ -21,7 +22,13 @@ class SurveillanceController extends Controller
      */
     public function index($patient)
     {
-        return Surveillance::where('patient_id', $patient)->orderBy('date', 'asc')->get();
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Not authorized to view this patient'], 404);
+        }
+
+        $surveillance = Surveillance::where('patient_id', $patient)->orderBy('date', 'asc')->get();
+        return ['data' =>  $surveillance, 'permission' => $permission];
     }
 
     /**
@@ -130,54 +137,43 @@ class SurveillanceController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function updateEvolutionIndicators(Patient $patient, $date, $indicateur)
+    public function updateEvolutionIndicators(Patient $patient, $date, $indicateurs)
     {
         $date = Carbon::createFromFormat('d/m/Y', $date);
         $evolution  = Evolution::where('date', $date->format('Y-m-d') )->first();
         if($evolution){
-            $indicateur = [
-                "TA_PAD"=>       $indicateur['TA_PAD'], 
-                "TA_PAS"=>       $indicateur['TA_PAS'], 
-                "FC"=>           $indicateur['FC'], 
-                "FR"=>           $indicateur['FR'], 
-                "temperature"=>  $indicateur['T'],
-                "Diurese"=>      $indicateur['diurese'], 
-                "poids"=>        $indicateur['poids'], 
-                "IMC"=>          $evolution->indicateur->IMC ?? null, 
-                "SpO2"=>         $evolution->indicateur->SpO2 ?? null, 
-                "glycemie"=>     $evolution->indicateur->glycemie ?? null
+            $indicateurs = [
+                "TA_PAD"=>       $indicateurs['TA_PAD'], 
+                "TA_PAS"=>       $indicateurs['TA_PAS'], 
+                "FC"=>           $indicateurs['FC'], 
+                "FR"=>           $indicateurs['FR'], 
+                "temperature"=>  $indicateurs['T'],
+                "Diurese"=>      $indicateurs['diurese'], 
+                "poids"=>        $indicateurs['poids'], 
+                "IMC"=>          $evolution->indicateurs->IMC ?? null, 
+                "SpO2"=>         $evolution->indicateurs->SpO2 ?? null, 
+                "glycemie"=>     $evolution->indicateurs->glycemie ?? null
             ];
-            $evolution->indicateur = $indicateur;
-            $evolution->update();
+            //Update indicateurs for all author for the same patient
+            Evolution::where('patient_id', $evolution->patient_id)->update(['indicateurs' => $indicateurs]);
         }else{
-            $indicateur = [
-                "TA_PAD"=>       $indicateur['TA_PAD'], 
-                "TA_PAS"=>       $indicateur['TA_PAS'], 
-                "FC"=>           $indicateur['FC'], 
-                "FR"=>           $indicateur['FR'], 
-                "temperature"=>  $indicateur['T'],
-                "Diurese"=>      $indicateur['diurese'], 
-                "poids"=>        $indicateur['poids'], 
+            $indicateurs = [
+                "TA_PAD"=>       $indicateurs['TA_PAD'], 
+                "TA_PAS"=>       $indicateurs['TA_PAS'], 
+                "FC"=>           $indicateurs['FC'], 
+                "FR"=>           $indicateurs['FR'], 
+                "temperature"=>  $indicateurs['T'],
+                "Diurese"=>      $indicateurs['diurese'], 
+                "poids"=>        $indicateurs['poids'], 
                 "IMC"=>          null, 
                 "SpO2"=>         null,  
                 "glycemie"=>     null
                 
             ];
             $evolution = new Evolution;
-            $evolution->date            = $date;
-            $evolution->indicateur      = $indicateur;
-            $evolution->cliniques       = [
-                                            "neurologique"      => ["valeur"=> null, "score_indice"=> []], 
-                                            "signe_generaux"    => ["valeur"=> null, "score_indice"=> []], 
-                                            "abdomino_pelvien"  => ["valeur"=> null, "score_indice"=> []], 
-                                            "cardiovasculaire"  => ["valeur"=> null, "score_indice"=> []], 
-                                            "pleuro_pulmonaire" => ["valeur"=> null, "score_indice"=> []], 
-                                            "signe_fonctionnel" => ["valeur"=> null, "score_indice"=> []]
-                                        ];
-            $evolution->paracliniques   = ["paraclinique_recent"    => null, "paraclinique_en_attente"  => null, "paraclinique_a_prescrire" => null];
-            $evolution->traitement      = ["traitement_stop"        => null, "traitement_debut"         => null, "traitement_modification"  => null];
-            $evolution->avis            = "";
-            $evolution->conclusion      = "";
+            $evolution->date        = $date;
+            $evolution->indicateurs = $indicateurs;
+
             $patient->evolutions()->save($evolution);
         }
     }

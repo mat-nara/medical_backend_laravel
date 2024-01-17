@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Patient;
 use App\Models\Evolution;
+use PatientAccess;
 
 
 
@@ -19,11 +20,9 @@ class RecapitulationController extends Controller
      */
     public function index($patient)
     {
-        $user       = Auth::user();
-        $authorized = count(Patient::find($patient)->owners->where('id', $user->id)) > 0 ? true : false;
-
-        if(!$authorized){
-            return response(['error' => 1, 'message' => 'Patient doesn\'t exist or you are not authorized'], 403); 
+        $permission = PatientAccess::viewPermission($patient);
+        if($permission == 'unauthorized'){
+            return response(['error' => 1, 'message' => 'Not authorized to update this patient'], 404);
         }
         
         $recap = Patient::with('observation', 'traitements')->find($patient);

@@ -31,7 +31,7 @@ class UserSeeder extends Seeder
             'parent_id'     => 0,
             'name'          => 'RAKOTOARISOA Mahefa Théodule',
             'email'         => 'mahefatheodule@gmail.com',
-            'password'      => Hash::make('123')
+            'password'      => Hash::make('Aa123456')
         ]);
         $user->roles()->attach(Role::where('slug', 'super_admin')->first());
     }

@@ -43,20 +43,16 @@ class EvolutionController extends Controller
             return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Evolution data'], 404);
         }
 
-        $patient = Patient::find($patient);
-        $evolution                  = new Evolution;
-        $evolution->date            = $request->date;
-        $evolution->indicateur      = $request->indicateur;
-        $evolution->cliniques       = $request->cliniques;
-        $evolution->paracliniques   = $request->paracliniques;
-        $evolution->traitement      = $request->traitement;
-        $evolution->avis            = $request->avis;
-        $evolution->conclusion      = $request->conclusion;
+        $patient    = Patient::find($patient);
+        $evolution  = new Evolution;
+        
+        $evolution->date        = $request->date;
+        $evolution->indicateurs = $request->indicateurs;
         $patient->evolutions()->save($evolution);
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new Evolution data '.' with date: '. $evolution->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
-        return response(['error' => 0, 'message' => 'Evolution stored']);
+        return response(['error' => 0, 'message' => 'Evolution stored', 'data' => $evolution]);
     }
 
     /**
@@ -77,7 +73,7 @@ class EvolutionController extends Controller
         $ISO_str_date   = $array_date[2].'-'.$array_date[1].'-'.$array_date[0];  
         $evolution      = Evolution::where('patient_id', $patient)
                                     ->where('date', $ISO_str_date)
-                                    ->get();
+                                    ->first();
         return ['data' =>  $evolution, 'permission' => $permission];
     }
 
@@ -115,17 +111,11 @@ class EvolutionController extends Controller
         }
 
         $evolution = Evolution::find($evolution);
-        $evolution->date            = $request->date            ?? $evolution->date;
-        $evolution->indicateur      = $request->indicateur      ?? $evolution->indicateur;
-        $evolution->cliniques       = $request->cliniques       ?? $evolution->cliniques;
-        $evolution->paracliniques   = $request->paracliniques   ?? $evolution->paracliniques;
-        $evolution->traitement      = $request->traitement      ?? $evolution->traitement;
-        $evolution->avis            = $request->avis            ?? $evolution->avis;
-        $evolution->conclusion      = $request->conclusion      ?? $evolution->conclusion;
+        $evolution->indicateurs = $request->indicateurs ?? $evolution->indicateurs;
         $evolution->update();
 
-        $patient        = Patient::find($patient);
         $loggedInUser   = $request->user();
+        $patient        = Patient::find($patient);
         LogActivity::addToLog($loggedInUser->name . ' update the Evolution data '.' with date: '. $evolution->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Evolution updated']);
     }
@@ -144,11 +134,11 @@ class EvolutionController extends Controller
             return response(['error' => 1, 'message' => 'Not authorized to update patient\'s Evolution data'], 404);
         }
 
-        $evolution = Evolution::find($evolution);
+        $evolution  = Evolution::find($evolution);
         $evolution->delete();
 
-        $patient    = Patient::find($patient);
         $user       = Auth::user();
+        $patient    = Patient::find($patient);
         LogActivity::addToLog($user->name . ' deleted the Evolution data '.' with date: '. $evolution->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
         return response(['error' => 0, 'message' => 'Evolution deleted']);
     }

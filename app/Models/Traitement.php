@@ -11,13 +11,23 @@ class Traitement extends Model
 
     protected $fillable = [
         'patient_id',
-        'value'
-        //'name',
-        //'DCI',
-        //'forme',
-        //'posologie',
+        'code',
+        'name',
+        'DCI',
+        'forme',
+        'posologie',
+        'prise_journalier',
+        'etat',
+        'created_by',
+        'created_at',
+        'updated_by',
+        'updated_at'
+
+        
+        //'value'
         //'suivi_prise',
     ]; 
+
 
     /**
      * The attributes that should be cast.
@@ -25,7 +35,8 @@ class Traitement extends Model
      * @var array
      */
     protected $casts = [
-        'value' => 'array'
+        //'value' => 'array',
+        'prise_journalier' => 'json'
         //'suivi_prise'    => 'array',
     ];
 
@@ -35,10 +46,10 @@ class Traitement extends Model
      * @param string $value
      * @return string
      */
-    public function getDateAttribute($value)
-    {
-        return date('d/m/Y', strtotime($value));
-    }
+    // public function getDateAttribute($value)
+    // {
+    //     return date('d/m/Y', strtotime($value));
+    // }
 
     /**
      * mutate the date to a valid date.
@@ -46,10 +57,10 @@ class Traitement extends Model
      * @param string $value
      * @return void
      */
-    public function setDateAttribute($values)
-    {
-        return $this->attributes['date'] = date('Y-m-d', strtotime(str_replace('/', '-', $values)));
-    }
+    // public function setDateAttribute($values)
+    // {
+    //     return $this->attributes['date'] = date('Y-m-d', strtotime(str_replace('/', '-', $values)));
+    // }
 
     /**
      * Get the patient that owns the article.
@@ -58,5 +69,14 @@ class Traitement extends Model
     public function patient()
     {
         return $this->belongsTo(Patient::class);
+    }
+
+    /**
+     * Get the suivies.
+     * 
+     */
+    public function suivies()
+    {
+        return $this->hasMany(SuivieTraitement::class);
     }
 }

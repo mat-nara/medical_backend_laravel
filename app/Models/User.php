@@ -71,7 +71,7 @@ class User extends Authenticatable
      * 
      */
     public function childs(){
-        return $this->hasMany(User::class,'parent_id','id') ;
+        return $this->hasMany(User::class,'parent_id','id');
     }
 
 
@@ -99,6 +99,15 @@ class User extends Authenticatable
      */
     public function patients() {
         return $this->belongsToMany(Patient::class, 'accesses', 'user_id', 'patient_id')->withPivot(['id','permission']);
+    }
+
+
+    /**
+     * Get all note writen by the user.
+     * 
+     */
+    public function notes(){
+        return $this->hasMany(Note::class, 'user_id', 'id');
     }
 
 }

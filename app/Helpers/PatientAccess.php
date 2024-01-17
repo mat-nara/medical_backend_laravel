@@ -22,22 +22,28 @@ class PatientAccess
             return $permission; 
         }
 
-        //Grant write access to Admin
+        $hopital_id_user    = $loggedInUser->service->hopital->id;
+        $hopital_id_patient = $patient->service->hopital_id;
+
+        //Grant write access to Admin on same hospital
         if($loggedInUser->roles[0]->slug == 'admin'){
-
-            $hopital_id_user    = $loggedInUser->service->hopital->id;
-            $hopital_id_patient = $patient->service->hopital_id;
-
             if($hopital_id_user == $hopital_id_patient){
                 $permission = 'write';
                 return $permission; 
             }
         }
 
-        //For Owners user
+        //For Owners user, grant access according to shared access
         $patient    =  $loggedInUser->patients()->where('patients.id', $patient->id)->first();
         if($patient){
             $permission = $patient->pivot->permission; 
+            return $permission;
+        }
+
+        //Grand read access for user on same hospital
+        if($hopital_id_user == $hopital_id_patient){
+            $permission = 'read';
+            return $permission; 
         }
 
         return $permission;

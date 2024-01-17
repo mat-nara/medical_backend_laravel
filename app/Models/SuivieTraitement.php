@@ -5,17 +5,18 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Evolution extends Model
+class SuivieTraitement extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'patient_id',
+        'traitement_id',
         'user_id',
         'date',
-        'indicateurs'
+        'heure',
+        'heure_finale',
+        'commentaire'
     ]; 
-
 
     /**
      * get the date value.
@@ -40,29 +41,12 @@ class Evolution extends Model
     }
 
     /**
-     * The attributes that should be cast.
-     *
-     * @var array
-     */
-    protected $casts = [
-        'indicateurs' => 'json'
-    ];
-
-    /**
-     * Get the patient that owns the article.
+     * Get the traitement that owns the suivi.
      * 
      */
-    public function patient()
+    public function traitement()
     {
-        return $this->belongsTo(Patient::class);
+        return $this->belongsTo(Traitement::class);
     }
 
-    /**
-     * Get the notes for the evolution.
-     * 
-     */
-    public function notes()
-    {
-        return $this->hasMany(Note::class);
-    }
 }
