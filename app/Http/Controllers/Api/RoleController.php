@@ -17,45 +17,65 @@ class RoleController extends Controller
 
         $loggedInUser   = $request->user();
         $slug           = $loggedInUser->roles[0]->slug;
-        return $this->generate_lower_role($slug);
-        //return Role::all();
+
+        // SUPER ADMIN: can view all user
+        if($loggedInUser->roles[0]->slug == 'super_admin'){
+            return Role::all();
+        }
+
+        // ADMIN: Only all user on same hospital
+        if($loggedInUser->roles[0]->slug == 'admin'){
+            return Role::where('slug', '!=', 'super_admin')->get();
+        }
+
+        //return $this->generate_lower_role($slug);
     }
 
-    public function generate_lower_role($slug){
+    static public function generate_lower_role($slug){
         
         $role           = Role::where('slug', $slug)->first();
-        $lower_roles    = [$role];
-        while( count($role->childs) > 0){
-            
-            $childs = $role->childs;
-            for ($i=0; $i < count($childs); $i++) { 
-                $lower_roles[] = $childs[$i];
-            }
-            $role = $childs[0];
+        $roles          = Role::where('hierarchic_level', '>=', $role->hierarchic_level);
+        $lower_roles    = [];
+        foreach ($roles as $key => $value) {
+            $lower_roles[] = $value->slug;
         }
+        // $lower_roles    = [$role];
+        // while( count($role->childs) > 0){
+            
+        //     $childs = $role->childs;
+        //     for ($i=0; $i < count($childs); $i++) { 
+        //         $lower_roles[] = $childs[$i];
+        //     }
+        //     $role = $childs[0];
+        // }
         return $lower_roles;
     }
 
-    public function generate_strict_lower_role($slug, $attribut){
+    static public function generate_strict_lower_role($slug, $attribut){
         
         $role           = Role::where('slug', $slug)->first();
+        $roles          = Role::where('hierarchic_level', '>', $role->hierarchic_level);
         $lower_roles    = [];
-        while( count($role->childs) > 0){
+        foreach ($roles as $key => $value) {
+            $lower_roles[] = $value->slug;
+        }
+        
+        // while( count($role->childs) > 0){
             
-            $childs = $role->childs;
-            for ($i=0; $i < count($childs); $i++) { 
-                $lower_roles[] = $childs[$i];
-            }
-            $role = $childs[0];
-        }
+        //     $childs = $role->childs;
+        //     for ($i=0; $i < count($childs); $i++) { 
+        //         $lower_roles[] = $childs[$i];
+        //     }
+        //     $role = $childs[0];
+        // }
 
-        if($attribut == 'slug'){
-            $array_slug = [];
-            for ($i=0; $i < count($lower_roles); $i++) { 
-                $array_slug[] = $lower_roles[$i]->slug;
-            }
-            return $array_slug;
-        }
+        // if($attribut == 'slug'){
+        //     $array_slug = [];
+        //     for ($i=0; $i < count($lower_roles); $i++) { 
+        //         $array_slug[] = $lower_roles[$i]->slug;
+        //     }
+        //     return $array_slug;
+        // }
 
         return $lower_roles;
     }

@@ -231,7 +231,7 @@ return [
         'View' => Illuminate\Support\Facades\View::class,
         'LogActivity' => App\Helpers\LogActivity::class,
         'PatientAccess' => App\Helpers\PatientAccess::class,
-
+        'UserAccess' => App\Helpers\UserAccess::class,
     ],
 
 ];

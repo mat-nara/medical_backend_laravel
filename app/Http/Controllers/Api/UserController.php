@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Exceptions\MissingAbilityException;
 use App\Http\Controllers\Api\RoleController;
+use UserAccess;
 use LogActivity;
 use Auth;
 
@@ -30,7 +31,6 @@ class UserController extends Controller
             return User::with('roles', 'service','service.hopital')->get();
         }
 
-
         // ADMIN: Only all user on same hospital
         if($loggedInUser->roles[0]->slug == 'admin'){
 
@@ -44,9 +44,14 @@ class UserController extends Controller
                         ->get();
 
             //Filter only user with lower Role
-            $admin_lower_roles = RoleController::generate_strict_lower_role('admin', 'slug');
-            
-            $filtered_user = [$loggedInUser];
+            $role               = Role::where('slug', 'admin')->first();
+            $roles              = Role::where('hierarchic_level', '>=', $role->hierarchic_level)->get();
+            $admin_lower_roles  = [];
+            foreach ($roles as $key => $value) {
+                $admin_lower_roles[] = $value->slug;
+            }
+
+            $filtered_user = [];
             for ($i=0; $i < count($users); $i++) { 
                 if(in_array($users[$i]->roles[0]->slug, $admin_lower_roles)){
                     $filtered_user[] = $users[$i];
@@ -57,70 +62,78 @@ class UserController extends Controller
 
 
         //CHEF DE SERVICE: Only user on same service
-        if($loggedInUser->roles[0]->slug == 'chef_service'){
+        // if($loggedInUser->roles[0]->slug == 'chef_service'){
             
-            $service_id = $loggedInUser->service->id;
+        //     $service_id = $loggedInUser->service->id;
             
-            $users = User::where('service_id', $service_id)
-                            ->with('roles', 'service','service.hopital')
-                            ->get();
+        //     $users = User::where('service_id', $service_id)
+        //                     ->with('roles', 'service','service.hopital')
+        //                     ->get();
 
-            return $users;
-
-            //Filter only user with lower Role
-            $chef_service_lower_roles = RoleController::generate_strict_lower_role('chef_service', 'slug');
+        //     //Filter only user with lower Role
+        //     $role               = Role::where('slug', 'chef_service')->first();
+        //     $roles              = Role::where('hierarchic_level', '>=', $role->hierarchic_level)->get();
+        //     $chef_service_lower_roles  = [];
+        //     foreach ($roles as $key => $value) {
+        //         $chef_service_lower_roles[] = $value->slug;
+        //     }
             
-            $filtered_user = [$loggedInUser];
-            for ($i=0; $i < count($users); $i++) { 
-                if(in_array($users[$i]->roles[0]->slug, $chef_service_lower_roles)){
-                    $filtered_user[] = $users[$i];
-                } 
-            }
-            return $filtered_user;
-        }
+        //     $filtered_user = [];
+        //     for ($i=0; $i < count($users); $i++) { 
+        //         if(in_array($users[$i]->roles[0]->slug, $chef_service_lower_roles)){
+        //             $filtered_user[] = $users[$i];
+        //         } 
+        //     }
+        //     return $filtered_user;
+        // }
 
         
         //MEDECIN: Only user on same service
-        if($loggedInUser->roles[0]->slug == 'medecin'){
+        // if($loggedInUser->roles[0]->slug == 'medecin'){
             
-            $service_id = $loggedInUser->service->id;
+        //     $service_id = $loggedInUser->service->id;
             
-            $users = User::where('service_id', $service_id)
-                            ->with('roles', 'service','service.hopital')
-                            ->get();
+        //     $users = User::where('service_id', $service_id)
+        //                     ->with('roles', 'service','service.hopital')
+        //                     ->get();
             
-            //Filter only user with lower Role
-            $admin_lower_roles = RoleController::generate_strict_lower_role('medecin', 'slug');
+        //     //Filter only user with lower Role
+        //     $role               = Role::where('slug', 'medecin')->first();
+        //     $roles              = Role::where('hierarchic_level', '>=', $role->hierarchic_level)->get();
+        //     $medecin_lower_roles  = [];
+        //     foreach ($roles as $key => $value) {
+        //         $medecin_lower_roles[] = $value->slug;
+        //     }
             
-            $filtered_user = [$loggedInUser];
-            for ($i=0; $i < count($users); $i++) { 
-                if(in_array($users[$i]->roles[0]->slug, $admin_lower_roles)){
-                    $filtered_user[] = $users[$i];
-                } 
-            }
-            return $filtered_user;
-        }
+        //     $filtered_user = [];
+        //     for ($i=0; $i < count($users); $i++) { 
+        //         if(in_array($users[$i]->roles[0]->slug, $medecin_lower_roles)){
+        //             $filtered_user[] = $users[$i];
+        //         } 
+        //     }
+        //     return $filtered_user;
+        // }
 
         //INTERN: Only user on same service
-        if($loggedInUser->roles[0]->slug == 'intern'){
+        // if($loggedInUser->roles[0]->slug == 'intern'){
             
-            $service_id = $loggedInUser->service->id;
+        //     $service_id = $loggedInUser->service->id;
             
-            $users = User::where('service_id', $service_id)
-                            ->with('roles', 'service','service.hopital')
-                            ->get();
+        //     $users = User::where('service_id', $service_id)
+        //                     ->with('roles', 'service','service.hopital')
+        //                     ->get();
             
-            //Filter only user with lower Role
-            $admin_lower_roles = RoleController::generate_strict_lower_role('intern', 'slug');
+        //     //Filter only user with lower Role
+        //     $admin_lower_roles = RoleController::generate_strict_lower_role('intern', 'slug');
             
-            $filtered_user = [$loggedInUser];
-            for ($i=0; $i < count($users); $i++) { 
-                if(in_array($users[$i]->roles[0]->slug, $admin_lower_roles)){
-                    $filtered_user[] = $users[$i];
-                } 
-            }
-            return $filtered_user;
-        }
+        //     $filtered_user = [$loggedInUser];
+        //     for ($i=0; $i < count($users); $i++) { 
+        //         if(in_array($users[$i]->roles[0]->slug, $admin_lower_roles)){
+        //             $filtered_user[] = $users[$i];
+        //         } 
+        //     }
+        //     return $filtered_user;
+        // }
     }
 
     public function hierarchie(){
@@ -150,6 +163,12 @@ class UserController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function store(Request $request) {
+
+        $loggedInUser = Auth::user();
+        if($loggedInUser->roles[0]->slug != 'super_admin' && $loggedInUser->roles[0]->slug != 'admin'){
+            return response(['error' => 1, 'message' => 'Not authorized to create user'], 404);
+        }
+
         $creds = $request->validate([
             'service_id'=> 'integer',
             'parent_id' => 'integer',
@@ -206,6 +225,13 @@ class UserController extends Controller
      * @return \App\Models\User  $user
      */
     public function show($id) {
+
+        //Check for permission access
+        $permission     = UserAccess::viewPermission($id);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to view user'], 404);
+        }
+
         $user = User::with('roles')->where('id', $id)->first();  
 
         $loggedInUser = Auth::user();
@@ -223,6 +249,12 @@ class UserController extends Controller
      * @throws MissingAbilityException
      */
     public function update(Request $request, User $user) {
+
+        //Check for permission access
+        $permission     = UserAccess::viewPermission($user->id);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update this user'], 404);
+        }
 
         $user->service_id   = $request->service_id          ?? $user->service_id;
         $user->parent_id    = $request->parent_id           ?? $user->parent_id;
@@ -264,6 +296,13 @@ class UserController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function destroy(User $user) {
+
+        //Check for permission access
+        $permission     = UserAccess::viewPermission($user->id);
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update this user'], 404);
+        }
+
         $adminRole = Role::where('slug', 'admin')->first();
         $userRoles = $user->roles;
 

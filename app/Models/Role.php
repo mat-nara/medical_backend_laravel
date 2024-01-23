@@ -10,7 +10,7 @@ class Role extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'slug',
+        'parent_id', 'hierarchic_level', 'name', 'slug',
     ];
 
     protected $hidden = [

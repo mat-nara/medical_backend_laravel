@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Patient;
 use App\Models\Evolution;
+use App\Models\Traitement;
 use PatientAccess;
 
 
@@ -26,6 +27,7 @@ class RecapitulationController extends Controller
         }
         
         $recap = Patient::with('observation', 'traitements')->find($patient);
+        $recap['traitements']   = Traitement::where('etat', 'actif')->get(); 
         $recap['antecedents']   = $this->antecedent($recap->observation);
         $recap['evolutions']    = Evolution::where('patient_id', $patient)
                                                 //->where('date', date("Y-m-d"))
@@ -115,13 +117,15 @@ class RecapitulationController extends Controller
             //Check if no data biologie information is associated to patient on database
             $patient = $patient[0];
             $biologie = [
-                'hematologies'                  => count($patient->hematologies) > 0                    ? $patient->hematologies[0] : [],
-                'biochimies'                    => count($patient->biochimies) > 0                      ? $patient->biochimies[0] : [],
-                'autresbiologies'               => count($patient->autresbiologies) > 0                 ? $patient->autresbiologies[0] : [],
-                'urines'                        => count($patient->urines) > 0                          ? $patient->urines[0] : [],
-                'autres_prelevements_biologies' => count($patient->autres_prelevements_biologies) > 0   ? $patient->autres_prelevements_biologies[0] : [],
-                'antibiogrammes'                => count($patient->antibiogrammes) > 0                  ? $patient->antibiogrammes[0] : []
+                'hematologies'                  => count($patient->hematologies) > 0                    ? $patient->hematologies[0]->conclusion                  : '',
+                'biochimies'                    => count($patient->biochimies) > 0                      ? $patient->biochimies[0]->conclusion                    : '',
+                'autresbiologies'               => count($patient->autresbiologies) > 0                 ? $patient->autresbiologies[0]->conclusion               : '',
+                'urines'                        => count($patient->urines) > 0                          ? $patient->urines[0]->conclusion                        : '',
+                'autres_prelevements_biologies' => count($patient->autres_prelevements_biologies) > 0   ? $patient->autres_prelevements_biologies[0]->conclusion : '',
+                'antibiogrammes'                => count($patient->antibiogrammes) > 0                  ? $patient->antibiogrammes[0]->conclusion                : ''
             ];
+            
+            /*
 
             //Hematologie data to simple string
             $hematologie = '';
@@ -204,6 +208,7 @@ class RecapitulationController extends Controller
                 'biochimies'                    => $biochimies,
                 'urines'                        => $urines
             ];
+            */
 
             return $biologie;
         }
