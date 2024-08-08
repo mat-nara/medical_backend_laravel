@@ -52,7 +52,7 @@ class UrineController extends Controller
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new Urine data '.' with date: '. $urine->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
-        return response(['error' => 0, 'message' => 'Urine stored']);
+        return response(['error' => 0, 'message' => 'Urine stored', 'data' => $urine]);
     }
 
     /**

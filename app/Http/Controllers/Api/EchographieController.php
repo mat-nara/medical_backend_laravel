@@ -51,7 +51,7 @@ class EchographieController extends Controller
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new Echographie data '.' with date: '. $echographie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
-        return response(['error' => 0, 'message' => 'Echographie stored']);
+        return response(['error' => 0, 'message' => 'Echographie stored', 'data' => $echographie]);
     }
 
     /**

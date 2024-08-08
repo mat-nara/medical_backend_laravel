@@ -41,11 +41,11 @@ class ResetPasswordNotification extends Notification
      */
     public function toMail($notifiable)
     {
-        $url = config('personnal.front_url') . '/reset-password/' . $this->token;
+        $url = "http://" . config('personnal.front_url') . '/reset-password/' . $this->token;
         return (new MailMessage)
                     ->subject(__('Reinitialiser votre mot de passe!'))
                     ->line(__('Vous recevez cet e-mail car nous avons reçu une demande de réinitialisation du mot de passe pour votre compte.'))
-                    ->action(__('Reinitialisez votre mot de passe'), $url)
+                    ->action(__('Reinitialisez votre mot de passe'), $url )
                     ->line(__('Ce lien de réinitialisation de mot de passe expirera dans :count minutes.', ['count' => config('auth.passwords.'.config('auth.defaults.passwords').'.expire')]))
                     ->line(__("Si vous n'avez pas demandé de réinitialisation de mot de passe, aucune autre action n'est requise."));
     }

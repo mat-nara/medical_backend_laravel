@@ -53,4 +53,13 @@ class Service extends Model
         return $this->hasMany(Patient::class, 'service_id', 'id');
     }
 
+    /**
+     * Get the DossierAntecedent.
+     * 
+     */
+    public function dossier()
+    {
+        return $this->hasOne(DossierAntecedent::class, 'service_id', 'id');
+    }
+
 }

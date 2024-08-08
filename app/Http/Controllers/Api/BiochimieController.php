@@ -52,7 +52,7 @@ class BiochimieController extends Controller
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new Biochimie data '.' with date: '. $biochimie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
-        return response(['error' => 0, 'message' => 'Biochimie stored']);
+        return response(['error' => 0, 'message' => 'Biochimie stored', 'data' => $biochimie]);
     }
 
     /**

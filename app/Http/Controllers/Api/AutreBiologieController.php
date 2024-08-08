@@ -52,7 +52,7 @@ class AutreBiologieController extends Controller
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new AutreBiologie data '.' with date: '. $autre_biologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
-        return response(['error' => 0, 'message' => 'AutreBiologie stored']);
+        return response(['error' => 0, 'message' => 'AutreBiologie stored', 'data' => $autre_biologie]);
     }
 
     /**

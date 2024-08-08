@@ -35,6 +35,8 @@ class Patient extends Model
         'heure_entree',
         'heure_sortie',
         'motif_entree', 
+        'etat',
+        'commentaire'
     ];
     
     /**
@@ -202,4 +204,31 @@ class Patient extends Model
     public function owners(): BelongsToMany {
         return $this->belongsToMany(User::class, 'accesses', 'patient_id', 'user_id',)->withPivot(['id', 'permission']);
     }
+
+    /**
+     * Get the Echologies for the article.
+     * 
+     */
+    public function documents()
+    {
+        return $this->hasMany(Document::class);
+    }
+
+    /**
+     * Get the DossierAntecedent.
+     * 
+     */
+    public function dossier()
+    {
+        return $this->hasOne(DossierAntecedent::class, 'patient_id', 'id');
+    }
+
+    /**
+     * Get the observation for the article.
+     * 
+     */
+    // public function antecedent()
+    // {
+    //     return $this->hasOne(Antecedent::class, 'patient_id', 'id');
+    // }
 }

@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\Patient;
 use App\Models\Evolution;
 use App\Models\Traitement;
+use App\Models\DossierAntecedent;
+use App\Models\Antecedent;
 use PatientAccess;
 
 
@@ -28,7 +30,7 @@ class RecapitulationController extends Controller
         
         $recap = Patient::with('observation', 'traitements')->find($patient);
         $recap['traitements']   = Traitement::where('etat', 'actif')->get(); 
-        $recap['antecedents']   = $this->antecedent($recap->observation);
+        $recap['antecedents']   = $this->antecedent($patient);
         $recap['evolutions']    = Evolution::where('patient_id', $patient)
                                                 //->where('date', date("Y-m-d"))
                                                 ->orderBy('date', 'desc')
@@ -45,11 +47,19 @@ class RecapitulationController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function antecedent($observation)
+    public function antecedent($patient)
     {
-        $antecedent = array_merge($observation->antecedent_medical, $observation->antecedent_chirurgical, $observation->antecedent_gineco);
+        $patient            = Patient::find($patient);
+        $dossier_antecedent = DossierAntecedent::where('patient_uuid', $patient->dossier->patient_uuid)->get()->all();
+        $antecedent         = Antecedent::where('patient_uuid', $patient->dossier->patient_uuid)->first();
+        
+        $antecedent_medical     = $antecedent->antecedent_medical      ?? [];
+        $antecedent_chirurgical = $antecedent->antecedent_chirurgical  ?? [];
+        $antecedent_gineco      = $antecedent->antecedent_gineco       ?? [];
+
+        $antecedent = array_merge($dossier_antecedent, $antecedent_medical, $antecedent_chirurgical, $antecedent_gineco);
         usort($antecedent, function($a, $b) {
-            return strtotime($a['date']) - strtotime($b['date']);
+            return strtotime($b['date']) - strtotime($a['date']);
         });
         return $antecedent;
     }
@@ -66,6 +76,9 @@ class RecapitulationController extends Controller
                             ->with('autres_imageries', function($query){
                                 $query->orderBy('date', 'desc')->first();
                             })
+                            ->with('examens_fonctionnels', function($query){
+                                $query->orderBy('date', 'desc')->first();
+                            })
                             ->get();
         
         if(count($patient) > 0 ){
@@ -73,9 +86,10 @@ class RecapitulationController extends Controller
             //Check if no data imagerie information is associated to patient on database
             $patient = $patient[0];
             $imagerie = [
-                'radiologies'       => count($patient->radiologies)         > 0 ? $patient->radiologies[0]      : [],
-                'echographies'      => count($patient->echographies)        > 0 ? $patient->echographies[0]     : [],
-                'autres_imageries'  => count($patient->autres_imageries)    > 0 ? $patient->autres_imageries[0] : []
+                'radiologies'           => count($patient->radiologies)             > 0 ? $patient->radiologies[0]          : [],
+                'echographies'          => count($patient->echographies)            > 0 ? $patient->echographies[0]         : [],
+                'autres_imageries'      => count($patient->autres_imageries)        > 0 ? $patient->autres_imageries[0]     : [],
+                'examens_fonctionnels'  => count($patient->examens_fonctionnels)    > 0 ? $patient->examens_fonctionnels[0] : []
             ];
 
             return $imagerie;

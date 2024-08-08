@@ -11,9 +11,7 @@ class Observation extends Model
     protected $fillable = [
         'patient_id',
         'historique', 
-        'antecedent_medical', 
-        'antecedent_chirurgical', 
-        'antecedent_gineco', 
+
         'antecedent_toxique', 
         'antecedent_allergique', 
         'exam_phys_signe_gen', 
@@ -37,9 +35,6 @@ class Observation extends Model
      * @var array
      */
     protected $casts = [
-        'antecedent_medical'                        => 'array',
-        'antecedent_chirurgical'                    => 'array',
-        'antecedent_gineco'                         => 'array',
         'antecedent_toxique'                        => 'array',
         'antecedent_allergique'                     => 'array',
         'exam_phys_signe_gen_score_indice'          => 'array',

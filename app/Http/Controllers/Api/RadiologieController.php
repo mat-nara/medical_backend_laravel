@@ -51,7 +51,7 @@ class RadiologieController extends Controller
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new Radiologie data '.' with date: '. $radiologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
-        return response(['error' => 0, 'message' => 'Radiologie stored']);
+        return response(['error' => 0, 'message' => 'Radiologie stored', 'data' => $radiologie]);
     }
 
     /**

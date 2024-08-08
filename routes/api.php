@@ -28,10 +28,7 @@ use App\Http\Controllers\Api\RecapitulationController;
 use App\Http\Controllers\Api\HopitalController;
 use App\Http\Controllers\Api\ServiceController;
 use App\Http\Controllers\Api\AccessController;
-
-
-
-
+use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\LogActivityController;
 
 
@@ -69,12 +66,14 @@ Route::group(['middleware'=> ['cors']], function(){
     Route::put('roles/{role}',      [RoleController::class, 'update'])  ->middleware(['auth:sanctum']);
     Route::delete('roles/{role}',   [RoleController::class, 'destroy']) ->middleware(['auth:sanctum']);
 
-    Route::post('patients/search',      [PatientController::class, 'index'])     ->middleware(['auth:sanctum']);
-    Route::post('patients',             [PatientController::class, 'store'])     ->middleware(['auth:sanctum']);
-    Route::get('patients/{patient}',    [PatientController::class, 'show'])      ->middleware(['auth:sanctum']);
-    Route::get('patients/{patient}/observation', [PatientController::class, 'show_with_observation'])->middleware(['auth:sanctum']);
-    Route::put('patients/{patient}',    [PatientController::class, 'update'])    ->middleware(['auth:sanctum']);
-    Route::delete('patients/{patient}', [PatientController::class, 'destroy'])   ->middleware(['auth:sanctum']);
+    Route::post('patients/search',                  [PatientController::class, 'index'])->middleware(['auth:sanctum']);
+    Route::post('patients/clone',                   [PatientController::class, 'clone_patient'])->middleware(['auth:sanctum']);
+    Route::post('patients',                         [PatientController::class, 'store'])->middleware(['auth:sanctum']);
+    Route::get('patients/{patient}',                [PatientController::class, 'show']) ->middleware(['auth:sanctum']);
+    Route::get('patients/{patient}/observation',    [PatientController::class, 'show_with_observation'])->middleware(['auth:sanctum']);
+    Route::put('patients/{patient}',                [PatientController::class, 'update'])       ->middleware(['auth:sanctum']);
+    Route::delete('patients/{patient}',             [PatientController::class, 'destroy'])      ->middleware(['auth:sanctum']);
+    Route::put('patients/{patient}/update-status',  [PatientController::class, 'update_status']) ->middleware(['auth:sanctum']);
 
     Route::get('patients/{patient}/hematologies',                   [HematologieController::class, 'index']) ->middleware(['auth:sanctum']);
     Route::post('patients/{patient}/hematologies',                  [HematologieController::class, 'store']) ->middleware(['auth:sanctum']);
@@ -194,6 +193,12 @@ Route::group(['middleware'=> ['cors']], function(){
     Route::put('patients/{patient}/accesses/{access}',         [AccessController::class, 'update'])->middleware(['auth:sanctum']);
     Route::delete('patients/{patient}/accesses/{access}',      [AccessController::class, 'destroy'])->middleware(['auth:sanctum']);
 
+    Route::get('patients/{patient}/documents',                      [DocumentController::class, 'index']) ->middleware(['auth:sanctum']);
+    Route::post('patients/{patient}/documents',                     [DocumentController::class, 'store']) ->middleware(['auth:sanctum']);
+    Route::get('patients/{patient}/documents/{document}',           [DocumentController::class, 'show'])  ->middleware(['auth:sanctum']);
+    Route::put('patients/{patient}/documents/{document}',           [DocumentController::class, 'update'])->middleware(['auth:sanctum']);
+    Route::delete('patients/{patient}/documents/{document}',        [DocumentController::class, 'destroy'])->middleware(['auth:sanctum']);
+    Route::get('patients/{patient}/documents/{document}/download',  [DocumentController::class, 'download'])->middleware(['auth:sanctum']);
 
     
     Route::post('log-activities',      [LogActivityController::class, 'index'] )->middleware(['auth:sanctum']);

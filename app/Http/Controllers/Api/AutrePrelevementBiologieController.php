@@ -52,7 +52,7 @@ class AutrePrelevementBiologieController extends Controller
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new AutrePrelevementBiologie data '.' with date: '. $autre_prelevement->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
-        return response(['error' => 0, 'message' => 'Autre prelevement biologie stored']);
+        return response(['error' => 0, 'message' => 'Autre prelevement biologie stored', 'data' => $autre_prelevement]);
     }
 
     /**

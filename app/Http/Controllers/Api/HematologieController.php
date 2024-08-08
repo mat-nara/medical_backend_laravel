@@ -52,7 +52,7 @@ class HematologieController extends Controller
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new Hematologie data '.' with date: '. $hematologie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
-        return response(['error' => 0, 'message' => 'Hematologie stored']);
+        return response(['error' => 0, 'message' => 'Hematologie stored', 'data' => $hematologie]);
     }
 
     /**

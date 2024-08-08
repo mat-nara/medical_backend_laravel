@@ -37,6 +37,9 @@ class CreatePatientsTable extends Migration
             $table->time('heure_entree')->nullable();
             $table->time('heure_sortie')->nullable();
             $table->string('motif_entree')->nullable();
+            $table->enum('etat', ['admis', 'ferme', 'transfere', 'decede'])->default('admis');
+            $table->string('commentaire')->nullable();
+            
 
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(DB::raw('CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP'));

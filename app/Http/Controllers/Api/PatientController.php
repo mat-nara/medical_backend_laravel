@@ -4,13 +4,17 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use App\Models\Patient;
 use App\Models\Observation;
+use App\Models\DossierAntecedent;
+use App\Models\Antecedent;
 use LogActivity;
 use PatientAccess;
 use Auth;
 use DB;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 
 class PatientController extends Controller
@@ -110,7 +114,10 @@ class PatientController extends Controller
         $patient->date_sortie               = $request->date_sortie;
         $patient->heure_entree              = $request->heure_entree;
         $patient->heure_sortie              = $request->heure_sortie;            
-        $patient->motif_entree              = $request->motif_entree;   
+        $patient->motif_entree              = $request->motif_entree;
+        $patient->etat                      = $request->etat ?? 'admis';
+        $patient->commentaire               = $request->commentaire;   
+        
 
         if($request->date_entree){
             $patient->date_entree           = $request->date_entree;       
@@ -121,9 +128,7 @@ class PatientController extends Controller
         $observation = new Observation();
           
         $observation->historique                                = $request->historique;                              
-        $observation->antecedent_medical                        = $request->antecedent_medical;                      
-        $observation->antecedent_chirurgical                    = $request->antecedent_chirurgical;                  
-        $observation->antecedent_gineco                         = $request->antecedent_gineco;                       
+              
         $observation->antecedent_toxique                        = $request->antecedent_toxique;                      
         $observation->antecedent_allergique                     = $request->antecedent_allergique;                   
         $observation->exam_phys_signe_gen                       = $request->exam_phys_signe_gen;                     
@@ -149,6 +154,30 @@ class PatientController extends Controller
             $user = $user->parent;
             $user->patients()->attach($patient);
         }
+
+
+        //Create dossier antecedent
+        $dossier_antecedent = new DossierAntecedent();
+
+        $dossier_antecedent->patient_uuid   = Str::uuid();
+        $dossier_antecedent->patient_id     = $patient->id;
+        $dossier_antecedent->service_id     = $patient->service_id;
+        $dossier_antecedent->date           = $patient->date_entree;
+        $dossier_antecedent->event          = $patient->motif_entree;
+        $dossier_antecedent->description    = $patient->commentaire;
+        
+        $dossier_antecedent->save();
+
+
+        //Create antecedent
+        $antecedent = new Antecedent();
+        
+        $antecedent->patient_uuid              = $dossier_antecedent->patient_uuid;
+        $antecedent->antecedent_medical        = $request->antecedent_medical;                      
+        $antecedent->antecedent_chirurgical    = $request->antecedent_chirurgical;                  
+        $antecedent->antecedent_gineco         = $request->antecedent_gineco;  
+
+        $antecedent->save();   
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new Patient '.' with name: '. $patient->nom);
@@ -188,10 +217,13 @@ class PatientController extends Controller
             return response(['error' => 1, 'message' => 'Patient doesn\'t exist or you don\'t have access'], 404);
         }
 
-        $patient = Patient::with('observation')->find($patient);
+        $patient    = Patient::with('observation')->find($patient);
+        $antecedent = Antecedent::where('patient_uuid', $patient->dossier->patient_uuid)->first();
+        $patient['antecedent'] = $antecedent;
+
         LogActivity::addToLog($loggedInUser->name . ' viewed Patient '. $patient->nom.' '. $patient->prenoms. '\'s information');
 
-        return ['data' => $patient, 'permission' => $permission];;
+        return ['data' => $patient, 'permission' => $permission];
     }
 
 
@@ -241,9 +273,7 @@ class PatientController extends Controller
         $observation = $patient->observation;
         
         $observation->historique                                = $request->historique                               ?? $observation->historique;
-        $observation->antecedent_medical                        = $request->antecedent_medical                       ?? $observation->antecedent_medical;
-        $observation->antecedent_chirurgical                    = $request->antecedent_chirurgical                   ?? $observation->antecedent_chirurgical;
-        $observation->antecedent_gineco                         = $request->antecedent_gineco                        ?? $observation->antecedent_gineco;
+        
         $observation->antecedent_toxique                        = $request->antecedent_toxique                       ?? $observation->antecedent_toxique;
         $observation->antecedent_allergique                     = $request->antecedent_allergique                    ?? $observation->antecedent_allergique;
         $observation->exam_phys_signe_gen                       = $request->exam_phys_signe_gen                      ?? $observation->exam_phys_signe_gen;
@@ -261,6 +291,18 @@ class PatientController extends Controller
         $observation->conclusion                                = $request->conclusion                               ?? $observation->conclusion;
 
         $observation->update();
+
+
+        //Update antecedent
+        $antecedent = Antecedent::where('patient_uuid', $patient->dossier->patient_uuid)->first();
+
+        $antecedent->patient_uuid           = $patient->dossier->patient_uuid;
+        $antecedent->antecedent_medical     = $request->antecedent_medical      ?? $antecedent->antecedent_medical;
+        $antecedent->antecedent_chirurgical = $request->antecedent_chirurgical  ?? $antecedent->antecedent_chirurgical;
+        $antecedent->antecedent_gineco      = $request->antecedent_gineco       ?? $antecedent->antecedent_gineco;
+
+        $antecedent->update();   
+
         
         LogActivity::addToLog($loggedInUser->name . ' update Patient '.' with name: '. $patient->nom);
         return response(['error' => 0, 'message' => 'Patient updated']);
@@ -274,7 +316,7 @@ class PatientController extends Controller
      */
     public function destroy($patient)
     {
-        $loggedInUser   = $request->user();
+        $user   = Auth::user();
         $permission     = PatientAccess::viewPermission($patient);
 
         if($permission != 'write'){
@@ -284,7 +326,119 @@ class PatientController extends Controller
         $patient = Patient::find($patient);
         $patient->delete();
 
+        $dossier_courant = DossierAntecedent::where('patient_id', $patient->id)->first();
+        $dossier_courant->delete();
+
         LogActivity::addToLog($user->name . ' deleted Patient '.' with name: '. $patient->nom);
         return response(['error' => 0, 'message' => 'Patient deleted']);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function update_status(Request $request, $patient)
+    {
+        $loggedInUser   = $request->user();
+        $permission     = PatientAccess::viewPermission($patient);
+
+        if($permission != 'write'){
+            return response(['error' => 1, 'message' => 'Not authorized to update this patient'], 404);
+        }
+
+        //Check for password 
+        $user = Auth::user();
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            return response(['error' => 1, 'message' => "Mot de passe incorrecte!"], 401);
+        }
+
+        $patient = Patient::find($patient);
+
+        $patient->date_sortie   = $request->date_sortie     ?? $patient->date_sortie;
+        $patient->heure_sortie  = $request->heure_sortie    ?? $patient->heure_sortie;
+        $patient->etat          = $request->etat            ?? $patient->etat;
+        $patient->commentaire   = $request->commentaire     ?? $patient->commentaire;
+
+        $patient->update();
+
+        LogActivity::addToLog($loggedInUser->name . ' update Patient  '.' with name: '. $patient->nom .' status to '. $patient->etat);
+        return response(['error' => 0, 'message' => 'Patient status updated']);
+    }
+
+    /**
+     * Store a newly created resource based on old one in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function clone_patient(Request $request)
+    {
+        $request->validate([
+            'old_patient_id'    => 'required',
+            'service_id'        => 'required',
+            'motif_entree'      => 'required',
+            'date_entree'       => 'required',
+            'heure_entree'      => 'required'
+        ]);
+
+        $patient_old = Patient::find($request->old_patient_id);
+
+        $patient = new Patient();
+
+        $patient->service_id                = $request->service_id;
+        $patient->nom                       = $patient_old->nom;                    
+        $patient->prenoms                   = $patient_old->prenoms;                
+        $patient->genre                     = $patient_old->genre;                  
+        $patient->dob                       = $patient_old->dob;                    
+        $patient->age                       = $patient_old->age;                    
+        $patient->lieu_dob                  = $patient_old->lieu_dob;               
+        $patient->status                    = $patient_old->status;                 
+        $patient->profession                = $patient_old->profession;             
+        $patient->adresse                   = $patient_old->adresse;                
+        $patient->ville                     = $patient_old->ville;                  
+        $patient->telephone                 = $patient_old->telephone;              
+        $patient->personne_en_charge        = $patient_old->personne_en_charge;     
+        $patient->contact_pers_en_charge    = $patient_old->contact_pers_en_charge; 
+        $patient->motif_entree              = $request->motif_entree;
+        $patient->date_entree               = $request->date_entree;
+        $patient->heure_entree              = $request->heure_entree;
+        $patient->etat                      = 'admis';
+
+        $patient->save();
+
+        $observation = new Observation();
+
+        $observation->antecedent_toxique                        = $patient_old->antecedent_toxique;                      
+        $observation->antecedent_allergique                     = $patient_old->antecedent_allergique;      
+
+        $patient->observation()->save($observation);
+
+        //Grant access to all supervisor user
+        $user = Auth::user();
+        $user->patients()->attach($patient);
+        while($user->parent){
+            $user = $user->parent;
+            $user->patients()->attach($patient);
+        }
+
+        //Create dossier antecedent
+        $dossier_old    = DossierAntecedent::where('patient_id', $patient_old->id)->first();
+        $dossier_antecedent = new DossierAntecedent();
+
+        $dossier_antecedent->patient_uuid   = $dossier_old->patient_uuid;
+        $dossier_antecedent->patient_id     = $patient->id;
+        $dossier_antecedent->service_id     = $patient->service_id;
+        $dossier_antecedent->date           = $patient->date_entree;
+        $dossier_antecedent->event          = $patient->motif_entree;
+        $dossier_antecedent->description    = $patient->commentaire;
+        
+        $dossier_antecedent->save();
+
+        $loggedInUser = $request->user();
+        LogActivity::addToLog($loggedInUser->name . ' clone Patient '.' with name: '. $patient->nom);
+        return response(['error' => 0, 'message' => 'Patient has been cloned successfully', 'data' => $patient], 201);
     }
 }

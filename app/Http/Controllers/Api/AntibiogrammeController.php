@@ -52,7 +52,7 @@ class AntibiogrammeController extends Controller
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new Antibiogram data '.' with date: '. $request->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
-        return response(['error' => 0, 'message' => 'Antibiogramme stored']);
+        return response(['error' => 0, 'message' => 'Antibiogramme stored', 'data' => $antibiogramme]);
     }
 
     /**

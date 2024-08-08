@@ -18,9 +18,7 @@ class CreateObservationsTable extends Migration
             $table->foreignId('patient_id')->constrained()->cascadeOnDelete();
             #$table->string('patient_id', 20);
             $table->string('historique')->nullable();
-            $table->json('antecedent_medical')->nullable();
-            $table->json('antecedent_chirurgical')->nullable();
-            $table->json('antecedent_gineco')->nullable();
+            
             $table->json('antecedent_toxique')->nullable();
             $table->json('antecedent_allergique')->nullable();
             $table->string('exam_phys_signe_gen')->nullable();
