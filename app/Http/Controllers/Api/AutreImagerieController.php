@@ -51,7 +51,7 @@ class AutreImagerieController extends Controller
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new AutreImagerie data '.' with date: '. $autre_imagerie->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
-        return response(['error' => 0, 'message' => 'AutreImagerie stored']);
+        return response(['error' => 0, 'message' => 'AutreImagerie stored', 'data' => $autre_imagerie]);
     }
 
     /**

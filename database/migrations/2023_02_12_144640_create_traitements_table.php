@@ -22,7 +22,7 @@ class CreateTraitementsTable extends Migration
             $table->string('forme')->nullable();
             $table->string('posologie')->nullable();
             $table->json('prise_journalier')->nullable();
-            $table->enum('etat', ['actif', 'termine', 'arrete'])->default('actif');
+            $table->enum('etat', ['actif', 'termine', 'arrete', 'modifie'])->default('actif');
             $table->unsignedBigInteger('created_by')->nullable();
             $table->timestamp('created_at')->default(DB::raw('CURRENT_TIMESTAMP'));
             $table->unsignedBigInteger('updated_by')->nullable();

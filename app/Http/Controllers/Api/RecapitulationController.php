@@ -28,8 +28,10 @@ class RecapitulationController extends Controller
             return response(['error' => 1, 'message' => 'Not authorized to update this patient'], 404);
         }
         
-        $recap = Patient::with('observation', 'traitements')->find($patient);
-        $recap['traitements']   = Traitement::where('etat', 'actif')->get(); 
+        $recap = Patient::with('observation')->find($patient);
+        $recap['traitements']   = Traitement::where('patient_id', $patient)
+                                            ->where('etat', 'actif')
+                                            ->get(); 
         $recap['antecedents']   = $this->antecedent($patient);
         $recap['evolutions']    = Evolution::where('patient_id', $patient)
                                                 //->where('date', date("Y-m-d"))

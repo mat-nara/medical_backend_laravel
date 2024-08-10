@@ -137,7 +137,7 @@ class TraitementController extends Controller
         $log->forme             = $traitement->forme;
         $log->posologie         = $traitement->posologie;
         $log->prise_journalier  = $traitement->prise_journalier;
-        $log->etat              = $traitement->etat;
+        $log->etat              = 'modifie';
         $log->created_by        = $traitement->created_by;
         $log->created_at        = $traitement->created_at;
         $log->updated_by        = $traitement->updated_by;

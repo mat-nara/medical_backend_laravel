@@ -51,7 +51,7 @@ class ExamenFonctionnelController extends Controller
 
         $loggedInUser = $request->user();
         LogActivity::addToLog($loggedInUser->name . ' create new ExamenFonctionnel data '.' with date: '. $examen_fonctionnel->date. ' for the patient '. $patient->nom . '  ' . $patient->prenoms);
-        return response(['error' => 0, 'message' => 'ExamenFonctionnel stored']);
+        return response(['error' => 0, 'message' => 'ExamenFonctionnel stored', 'data' => $examen_fonctionnel]);
     }
 
     /**
