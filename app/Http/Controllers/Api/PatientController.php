@@ -45,6 +45,7 @@ class PatientController extends Controller
         $start_date     = $request->start_date;
         $end_date       = $request->end_date;
         $row_number_max = $request->row_number_max;
+        $etat           = $request->etat;
 
         $loggedInUser = $request->user();
         $query = Patient::query();
@@ -61,17 +62,30 @@ class PatientController extends Controller
                 $query->where('hopital_id', $hopital_id);
             });
         }
-       
-        if ($key_word !== null && $key_word != '') {
-            $query->where('nom', 'like', '%'.$key_word.'%');
-            $query->orWhere('prenoms', 'like', '%'.$key_word.'%');
-        }
 
-        $query->whereBetween('date_entree',     [$request->start_date, $request->end_date]);
-        $query->orWhereBetween('date_sortie',   [$request->start_date, $request->end_date]);
-        $query->orderBy('created_at', 'desc');
-        $query->limit($request->row_number_max);
-        
+        if ($key_word !== null && $key_word != '') {
+            $query->where(function($query) use ($key_word) {
+                $query->where('nom', 'like', '%'.$key_word.'%')
+                      ->orWhere('prenoms', 'like', '%'.$key_word.'%');
+            });
+        }
+    
+        // Apply the etat filter
+        if ($etat !== null) {
+            $query->where('etat', $etat);
+        }
+    
+        // Apply the date range filters using a group
+        $query->where(function ($query) use ($start_date, $end_date) {
+            $query->whereBetween('date_entree', [$start_date, $end_date])
+                  ->orWhereBetween('date_sortie', [$start_date, $end_date]);
+        });
+    
+        // Apply ordering and limit
+        $query->orderBy('created_at', 'desc')
+              ->limit($row_number_max);
+    
+        // Execute the query and get the results
         $patients = $query->get();
         return $patients;
     }
